@@ -216,7 +216,7 @@ export default function GameRegistration({ onNavigate, onSaveGame, gameId, games
                   value={formData.story}
                   onChange={(e) => setFormData({ ...formData, story: e.target.value })}
                   placeholder="Descreva a história e o contexto narrativo do jogo"
-                  className="rounded-xl min-h-[100px]"
+                  className="rounded-xl min-h-25"
                 />
               </div>
 
@@ -230,7 +230,7 @@ export default function GameRegistration({ onNavigate, onSaveGame, gameId, games
                   value={formData.gameplay}
                   onChange={(e) => setFormData({ ...formData, gameplay: e.target.value })}
                   placeholder="Descreva como o jogo é jogado e suas mecânicas principais"
-                  className="rounded-xl min-h-[100px]"
+                  className="rounded-xl min-h-25"
                 />
               </div>
 
@@ -244,7 +244,7 @@ export default function GameRegistration({ onNavigate, onSaveGame, gameId, games
                   value={formData.gameFlow}
                   onChange={(e) => setFormData({ ...formData, gameFlow: e.target.value })}
                   placeholder="Descreva o fluxo e a progressão do jogo"
-                  className="rounded-xl min-h-[80px]"
+                  className="rounded-xl min-h-20"
                 />
               </div>
 
@@ -258,7 +258,7 @@ export default function GameRegistration({ onNavigate, onSaveGame, gameId, games
                   value={formData.learningMechanics}
                   onChange={(e: { target: { value: any; }; }) => setFormData({ ...formData, learningMechanics: e.target.value })}
                   placeholder="Descreva as mecânicas pedagógicas utilizadas"
-                  className="rounded-xl min-h-[80px]"
+                  className="rounded-xl min-h-20"
                 />
               </div>
 
@@ -272,7 +272,7 @@ export default function GameRegistration({ onNavigate, onSaveGame, gameId, games
                   value={formData.learningObjectives}
                   onChange={(e) => setFormData({ ...formData, learningObjectives: e.target.value })}
                   placeholder="Quais são os objetivos de aprendizagem do jogo?"
-                  className="rounded-xl min-h-[80px]"
+                  className="rounded-xl min-h-20"
                 />
               </div>
 
@@ -286,7 +286,7 @@ export default function GameRegistration({ onNavigate, onSaveGame, gameId, games
                   value={formData.bnccSkills}
                   onChange={(e) => setFormData({ ...formData, bnccSkills: e.target.value })}
                   placeholder="Ex: Habilidades da BNCC, Competências dos PCNs, ou outros frameworks curriculares"
-                  className="rounded-xl min-h-[100px]"
+                  className="rounded-xl min-h-25"
                 />
                 <p className="text-xs text-muted-foreground">
                   Pode incluir códigos e descrições de habilidades da BNCC, competências dos PCNs, entre outros componentes curriculares.
