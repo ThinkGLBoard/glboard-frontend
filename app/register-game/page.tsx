@@ -117,7 +117,7 @@ export default function GameRegistration({ onNavigate, onSaveGame, gameId, games
       <div className="max-w-4xl mx-auto space-y-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1>{gameId ? 'Editar Jogo' : 'Cadastrar Novo Jogo'}</h1>
+            <h1 className="font-heading">{gameId ? 'Editar Jogo' : 'Cadastrar Novo Jogo'}</h1>
             <p className="text-muted-foreground mt-1">
               {gameId 
                 ? 'Atualize as informações e documentos do seu jogo educacional'
