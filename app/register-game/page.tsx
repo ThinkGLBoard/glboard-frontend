@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/ui/button";
 import { Input } from "@/ui/input";
 import { Label } from "@/ui/label";
@@ -10,6 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Save, X, Upload, FileText, Image as ImageIcon, File, Trash2 } from "lucide-react";
 import { Separator } from "@/ui/separator";
 import { Badge } from "@/ui/badge";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/ui/form";
+import { gameFormSchema, type GameFormValues, type UploadedFile } from "./schema";
 
 interface Game {
   id: string;
@@ -29,14 +33,6 @@ interface Game {
   files?: UploadedFile[];
 }
 
-interface UploadedFile {
-  id: string;
-  name: string;
-  size: number;
-  type: 'egdd' | 'draft' | 'screenshot';
-  uploadDate: string;
-}
-
 interface GameRegistrationProps {
   onNavigate: (page: string) => void;
   onSaveGame: (gameData: any) => void;
@@ -47,21 +43,33 @@ interface GameRegistrationProps {
 export default function GameRegistration({ onNavigate, onSaveGame, gameId, games }: GameRegistrationProps) {
   const currentGame = games?.find(g => g.id === gameId);
 
-  const [formData, setFormData] = useState({
-    name: currentGame?.name || "",
-    targetAudience: currentGame?.targetAudience || "",
-    platform: currentGame?.platform || "",
-    genre: currentGame?.genre || "",
-    story: currentGame?.story || "",
-    gameplay: currentGame?.gameplay || "",
-    gameFlow: currentGame?.gameFlow || "",
-    learningMechanics: currentGame?.learningMechanics || "",
-    learningObjectives: currentGame?.learningObjectives || "",
-    bnccSkills: currentGame?.bnccSkills || "",
-    status: currentGame?.status || "development",
+  const form = useForm<GameFormValues>({
+    resolver: zodResolver(gameFormSchema),
+    defaultValues: {
+      name: currentGame?.name || "",
+      targetAudience: currentGame?.targetAudience || "",
+      platform: currentGame?.platform || "",
+      genre: currentGame?.genre || "",
+      story: currentGame?.story || "",
+      gameplay: currentGame?.gameplay || "",
+      gameFlow: currentGame?.gameFlow || "",
+      learningMechanics: currentGame?.learningMechanics || "",
+      learningObjectives: currentGame?.learningObjectives || "",
+      bnccSkills: currentGame?.bnccSkills || "",
+      status: currentGame?.status || "development",
+      files: currentGame?.files || [],
+    },
   });
 
-  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>(currentGame?.files || []);
+  // Sincronizar arquivos com o formulário
+  useEffect(() => {
+    const subscription = form.watch((value, { name }) => {
+      if (name === 'files') {
+        // Atualizar estado local se necessário
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [form]);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>, type: 'egdd' | 'draft' | 'screenshot') => {
     const files = event.target.files;
@@ -75,11 +83,13 @@ export default function GameRegistration({ onNavigate, onSaveGame, gameId, games
       uploadDate: new Date().toISOString()
     }));
 
-    setUploadedFiles(prev => [...prev, ...newFiles]);
+    const currentFiles = form.getValues('files') || [];
+    form.setValue('files', [...currentFiles, ...newFiles]);
   };
 
   const handleDeleteFile = (fileId: string) => {
-    setUploadedFiles(prev => prev.filter(f => f.id !== fileId));
+    const currentFiles = form.getValues('files') || [];
+    form.setValue('files', currentFiles.filter(f => f.id !== fileId));
   };
 
   const formatFileSize = (bytes: number): string => {
@@ -106,9 +116,8 @@ export default function GameRegistration({ onNavigate, onSaveGame, gameId, games
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSaveGame({ ...formData, files: uploadedFiles });
+  const handleSubmit = (values: GameFormValues) => {
+    onSaveGame(values);
     onNavigate('dashboard');
   };
 
@@ -131,9 +140,10 @@ export default function GameRegistration({ onNavigate, onSaveGame, gameId, games
           </Button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Main Card with all fields */}
-          <Card className="rounded-2xl">
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+            {/* Main Card with all fields */}
+            <Card className="rounded-2xl">
             <CardHeader>
               <CardTitle>{gameId ? 'Editar Informações' : 'Informações do Jogo'}</CardTitle>
               <CardDescription>
@@ -145,170 +155,250 @@ export default function GameRegistration({ onNavigate, onSaveGame, gameId, games
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Nome do Jogo */}
-              <div className="space-y-2">
-                <Label htmlFor="name">Nome do jogo *</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Digite o nome do jogo"
-                  required
-                  className="rounded-xl"
-                />
-              </div>
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nome do jogo *</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Digite o nome do jogo"
+                        className="rounded-xl"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               <Separator />
 
               {/* Público-alvo */}
-              <div className="space-y-2">
-                <Label htmlFor="targetAudience">Público-alvo</Label>
-                <Input
-                  id="targetAudience"
-                  value={formData.targetAudience}
-                  onChange={(e) => setFormData({ ...formData, targetAudience: e.target.value })}
-                  placeholder="ex: Estudantes do ensino fundamental (6-10 anos)"
-                  className="rounded-xl"
-                />
-              </div>
+              <FormField
+                control={form.control}
+                name="targetAudience"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Público-alvo</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="ex: Estudantes do ensino fundamental (6-10 anos)"
+                        className="rounded-xl"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               <Separator />
 
               {/* Plataforma */}
-              <div className="space-y-2">
-                <Label htmlFor="platform">Plataforma</Label>
-                <Input
-                  id="platform"
-                  value={formData.platform}
-                  onChange={(e) => setFormData({ ...formData, platform: e.target.value })}
-                  placeholder="ex: Web, Mobile (iOS/Android)"
-                  className="rounded-xl"
-                />
-              </div>
+              <FormField
+                control={form.control}
+                name="platform"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Plataforma</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="ex: Web, Mobile (iOS/Android)"
+                        className="rounded-xl"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               <Separator />
 
               {/* Gênero do Jogo */}
-              <div className="space-y-2">
-                <Label htmlFor="genre">Gênero do Jogo</Label>
-                <Select value={formData.genre} onValueChange={(value) => setFormData({ ...formData, genre: value })}>
-                  <SelectTrigger id="genre" className="rounded-xl">
-                    <SelectValue placeholder="Selecione o gênero" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Quebra-cabeça Educacional">Quebra-cabeça Educacional</SelectItem>
-                    <SelectItem value="Aventura">Aventura</SelectItem>
-                    <SelectItem value="Simulação">Simulação</SelectItem>
-                    <SelectItem value="Estratégia">Estratégia</SelectItem>
-                    <SelectItem value="Quiz">Quiz</SelectItem>
-                    <SelectItem value="RPG Educacional">RPG Educacional</SelectItem>
-                    <SelectItem value="Ação">Ação</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              <FormField
+                control={form.control}
+                name="genre"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Gênero do Jogo</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="rounded-xl">
+                          <SelectValue placeholder="Selecione o gênero" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Quebra-cabeça Educacional">Quebra-cabeça Educacional</SelectItem>
+                        <SelectItem value="Aventura">Aventura</SelectItem>
+                        <SelectItem value="Simulação">Simulação</SelectItem>
+                        <SelectItem value="Estratégia">Estratégia</SelectItem>
+                        <SelectItem value="Quiz">Quiz</SelectItem>
+                        <SelectItem value="RPG Educacional">RPG Educacional</SelectItem>
+                        <SelectItem value="Ação">Ação</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               <Separator />
 
               {/* História */}
-              <div className="space-y-2">
-                <Label htmlFor="story">História</Label>
-                <Textarea
-                  id="story"
-                  value={formData.story}
-                  onChange={(e) => setFormData({ ...formData, story: e.target.value })}
-                  placeholder="Descreva a história e o contexto narrativo do jogo"
-                  className="rounded-xl min-h-25"
-                />
-              </div>
+              <FormField
+                control={form.control}
+                name="story"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>História</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Descreva a história e o contexto narrativo do jogo"
+                        className="rounded-xl min-h-25"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               <Separator />
 
               {/* Gameplay */}
-              <div className="space-y-2">
-                <Label htmlFor="gameplay">Gameplay</Label>
-                <Textarea
-                  id="gameplay"
-                  value={formData.gameplay}
-                  onChange={(e) => setFormData({ ...formData, gameplay: e.target.value })}
-                  placeholder="Descreva como o jogo é jogado e suas mecânicas principais"
-                  className="rounded-xl min-h-25"
-                />
-              </div>
+              <FormField
+                control={form.control}
+                name="gameplay"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Gameplay</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Descreva como o jogo é jogado e suas mecânicas principais"
+                        className="rounded-xl min-h-25"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               <Separator />
 
               {/* Fluxo do jogo */}
-              <div className="space-y-2">
-                <Label htmlFor="gameFlow">Fluxo do jogo</Label>
-                <Textarea
-                  id="gameFlow"
-                  value={formData.gameFlow}
-                  onChange={(e) => setFormData({ ...formData, gameFlow: e.target.value })}
-                  placeholder="Descreva o fluxo e a progressão do jogo"
-                  className="rounded-xl min-h-20"
-                />
-              </div>
+              <FormField
+                control={form.control}
+                name="gameFlow"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Fluxo do jogo</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Descreva o fluxo e a progressão do jogo"
+                        className="rounded-xl min-h-20"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               <Separator />
 
               {/* Mecânica de aprendizagem */}
-              <div className="space-y-2">
-                <Label htmlFor="learningMechanics">Mecânica de aprendizagem</Label>
-                <Textarea
-                  id="learningMechanics"
-                  value={formData.learningMechanics}
-                  onChange={(e: { target: { value: any; }; }) => setFormData({ ...formData, learningMechanics: e.target.value })}
-                  placeholder="Descreva as mecânicas pedagógicas utilizadas"
-                  className="rounded-xl min-h-20"
-                />
-              </div>
+              <FormField
+                control={form.control}
+                name="learningMechanics"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Mecânica de aprendizagem</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Descreva as mecânicas pedagógicas utilizadas"
+                        className="rounded-xl min-h-20"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               <Separator />
 
               {/* Objetivos de aprendizagem */}
-              <div className="space-y-2">
-                <Label htmlFor="learningObjectives">Objetivos de aprendizagem</Label>
-                <Textarea
-                  id="learningObjectives"
-                  value={formData.learningObjectives}
-                  onChange={(e) => setFormData({ ...formData, learningObjectives: e.target.value })}
-                  placeholder="Quais são os objetivos de aprendizagem do jogo?"
-                  className="rounded-xl min-h-20"
-                />
-              </div>
+              <FormField
+                control={form.control}
+                name="learningObjectives"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Objetivos de aprendizagem</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Quais são os objetivos de aprendizagem do jogo?"
+                        className="rounded-xl min-h-20"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               <Separator />
 
               {/* Componente Curricular */}
-              <div className="space-y-2">
-                <Label htmlFor="bnccSkills">Componente Curricular (opcional)</Label>
-                <Textarea
-                  id="bnccSkills"
-                  value={formData.bnccSkills}
-                  onChange={(e) => setFormData({ ...formData, bnccSkills: e.target.value })}
-                  placeholder="Ex: Habilidades da BNCC, Competências dos PCNs, ou outros frameworks curriculares"
-                  className="rounded-xl min-h-25"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Pode incluir códigos e descrições de habilidades da BNCC, competências dos PCNs, entre outros componentes curriculares.
-                </p>
-              </div>
+              <FormField
+                control={form.control}
+                name="bnccSkills"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Componente Curricular (opcional)</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Ex: Habilidades da BNCC, Competências dos PCNs, ou outros frameworks curriculares"
+                        className="rounded-xl min-h-25"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Pode incluir códigos e descrições de habilidades da BNCC, competências dos PCNs, entre outros componentes curriculares.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               <Separator />
 
               {/* Status do Projeto */}
-              <div className="space-y-2">
-                <Label htmlFor="status">Status do Projeto *</Label>
-                <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value as 'development' | 'testing' | 'completed' })}>
-                  <SelectTrigger id="status" className="rounded-xl">
-                    <SelectValue placeholder="Selecione o status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="development">Em Desenvolvimento</SelectItem>
-                    <SelectItem value="testing">Em Teste</SelectItem>
-                    <SelectItem value="completed">Concluído</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Status do Projeto *</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="rounded-xl">
+                          <SelectValue placeholder="Selecione o status" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="development">Em Desenvolvimento</SelectItem>
+                        <SelectItem value="testing">Em Teste</SelectItem>
+                        <SelectItem value="completed">Concluído</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </CardContent>
           </Card>
 
@@ -420,13 +510,13 @@ export default function GameRegistration({ onNavigate, onSaveGame, gameId, games
               </div>
 
               {/* Uploaded Files List */}
-              {uploadedFiles.length > 0 && (
+              {(form.watch('files')?.length ?? 0) > 0 && (
                 <>
                   <Separator />
                   <div className="space-y-3">
-                    <Label>Arquivos Anexados ({uploadedFiles.length})</Label>
+                    <Label>Arquivos Anexados ({form.watch('files')?.length ?? 0})</Label>
                     <div className="space-y-2 max-h-[300px] overflow-y-auto">
-                      {uploadedFiles.map(file => (
+                      {(form.watch('files') || []).map(file => (
                         <div
                           key={file.id}
                           className="flex items-center justify-between p-3 bg-muted/30 rounded-xl border hover:bg-muted/50 transition-colors"
@@ -473,7 +563,8 @@ export default function GameRegistration({ onNavigate, onSaveGame, gameId, games
               {gameId ? 'Atualizar Jogo' : 'Salvar Jogo'}
             </Button>
           </div>
-        </form>
+          </form>
+        </Form>
       </div>
     </div>
   );
