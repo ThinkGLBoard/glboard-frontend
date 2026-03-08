@@ -1,0 +1,47 @@
+// const imgFrame527311 = "/images/placeholders/frame527311.png";
+
+function Frame1() {
+  return (
+    <div className="content-stretch flex flex-col gap-[16px] items-center leading-[normal] not-italic relative shrink-0 text-center w-full">
+      <p className="css-4hzbpn font-['Arial_Rounded_MT_Bold:Regular',sans-serif] relative shrink-0 text-[#397931] text-[24px] w-full">Cadastro</p>
+      <p className="css-4hzbpn font-['Poppins:Medium',sans-serif] relative shrink-0 text-[#394151] text-[16px] w-full">Crie sua conta e registre seu jogo na guilda dos desenvolvedores</p>
+    </div>
+  );
+}
+
+function Frame2() {
+  return (
+    <div className="absolute bg-white content-stretch flex flex-col items-center justify-center left-0 pb-[16px] pt-[40px] px-[24px] rounded-[10px] top-[30px] w-[272px]">
+      <div aria-hidden="true" className="absolute border border-[#d2d5db] border-solid inset-0 pointer-events-none rounded-[10px]" />
+      <Frame1 />
+    </div>
+  );
+}
+
+function Frame() {
+  return (
+    <div className="absolute bg-[#58b24d] content-stretch flex flex-col h-[60px] items-center justify-center left-1/2 px-[20px] py-[9px] rounded-[30px] top-[0.22px] translate-x-[-50%]">
+      <p className="css-ew64yg font-['Arial_Rounded_MT_Bold:Regular',sans-serif] leading-[normal] not-italic relative shrink-0 text-[36px] text-center text-white">1</p>
+    </div>
+  );
+}
+
+function Frame3() {
+  return (
+    <div className="h-[202px] relative shrink-0 w-full">
+      <Frame2 />
+      <Frame />
+    </div>
+  );
+}
+
+export default function Frame4() {
+  return (
+    <div className="content-stretch flex flex-col gap-[20px] items-start relative size-full">
+      <div className="aspect-[373.0741271972656/253.22000122070312] relative shrink-0 w-full" data-name="Frame 52731 1">
+        {/* <img alt="" className="absolute inset-0 max-w-none object-cover pointer-events-none size-full" src={imgFrame527311} /> */}
+      </div>
+      <Frame3 />
+    </div>
+  );
+}

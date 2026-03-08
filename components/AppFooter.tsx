@@ -10,7 +10,7 @@ import Image from "next/image";
 export function AppFooter() {
   return (
     <footer className="bg-[#166095] text-white py-12 px-6 sm:px-12">
-      <div className="max-w-[1400px] mx-auto">
+      <div className="max-w-350 mx-auto">
         <div className="flex flex-col lg:flex-row items-start justify-between gap-12 lg:gap-8">
           {/* Left Column: Location & Social */}
           <div className="flex-1 space-y-8 w-full lg:w-auto">
@@ -75,7 +75,7 @@ export function AppFooter() {
           <div className="flex-1 w-full lg:w-auto flex items-center justify-center">
             <div className="grid grid-cols-2 md:grid-cols-3 gap-x-12 gap-y-16 items-center justify-items-center">
               {/* FAPEAM */}
-              <div className="w-[180px]">
+              <div className="w-45">
              
               </div>
 
@@ -83,7 +83,7 @@ export function AppFooter() {
              
 
               {/* ThinkTEd */}
-              <div className="w-[140px]">
+              <div className="w-35">
               
               </div>
 
@@ -96,7 +96,7 @@ export function AppFooter() {
         {/* Copyright */}
         <div className="mt-16 text-center text-sm font-medium text-white/80 font-['Poppins',sans-serif]">
           <p>
-            © 2024 GAMETED. Site desenvolvido pela equipe
+            © 2026 GLBOARD. Site desenvolvido pela equipe
             ThinkTEd
           </p>
         </div>
