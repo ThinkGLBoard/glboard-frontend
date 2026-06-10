@@ -88,7 +88,7 @@ export default function Dashboard({
   onNavigate,
   games = [],
   onDeleteGame,
-}: Partial<DashboardProps>) {
+}: DashboardProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] =
     useState(false);
@@ -181,10 +181,15 @@ export default function Dashboard({
     setDeleteDialogOpen(true);
   };
 
+  // const handleEdit = (e: React.MouseEvent, id: string) => {
+  //   e.stopPropagation();
+  //   // onNavigate("game-registration", id);
+  // };
   const handleEdit = (e: React.MouseEvent, id: string) => {
-    e.stopPropagation();
-    // onNavigate("game-registration", id);
-  };
+  e.stopPropagation();
+  onNavigate("details-game", id);
+};
+
 
   const confirmDelete = () => {
     if (gameToDelete) {
@@ -226,7 +231,7 @@ export default function Dashboard({
                 para análise de aprendizagem!
               </p>
               <Button
-                onClick={() => onNavigate?.("register-game")}
+              onClick={() => onNavigate("register-game")}
                 size="lg"
                 className="rounded-xl shadow-lg h-14 px-8 text-lg"
               >
