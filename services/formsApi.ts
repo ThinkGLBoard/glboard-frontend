@@ -1,7 +1,7 @@
 const API_URL = "http://localhost:5208";
 
-const TEMP_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImpAZ21haWwuY29tIiwicm9sZSI6IlVzZXIiLCJuYW1laWQiOiJiNWVjZTEzYS0wODNkLTQ2YmEtOWRkZC04YTdlZTY5NmQxYzkiLCJuYW1lIjoic3RyaW5nIiwibmJmIjoxNzgxMDUzOTAzLCJleHAiOjE3ODEwNTc1MDMsImlhdCI6MTc4MTA1MzkwMywiaXNzIjoiQVBJLUV4ZW1wbG8iLCJhdWQiOiJDbGllbnQtRXhlbXBsbyJ9.7qbSCcovKwonV-zymompPGwCvf4QaTFB_8Q5PFcy39U";
-
+// const TEMP_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImpAZ21haWwuY29tIiwicm9sZSI6IlVzZXIiLCJuYW1laWQiOiJiNWVjZTEzYS0wODNkLTQ2YmEtOWRkZC04YTdlZTY5NmQxYzkiLCJuYW1lIjoic3RyaW5nIiwibmJmIjoxNzgxMDUzOTAzLCJleHAiOjE3ODEwNTc1MDMsImlhdCI6MTc4MTA1MzkwMywiaXNzIjoiQVBJLUV4ZW1wbG8iLCJhdWQiOiJDbGllbnQtRXhlbXBsbyJ9.7qbSCcovKwonV-zymompPGwCvf4QaTFB_8Q5PFcy39U";
+const TEMP_TOKEN = "TOPEN_GENERATED_FOR_DEMO_PURPOSES";
 export interface ApiOption {
   id: string;
   label: string;
@@ -16,8 +16,8 @@ export interface ApiQuestion {
   type: string;
   order: number;
   options: ApiOption[];
-  children: string[];
-  answer: string;
+  children: ApiQuestion[];
+  answer: string | null;
 }
 
 export interface ApiCategory {
@@ -60,9 +60,20 @@ async function request<T>(
   return response.json();
 }
 
-export function getForm() {
-  return request<FormResponse>("/api/forms");
+export async function getForm(gameId: string) {
+  const form = await request<FormResponse>(
+    `/api/forms?gameId=${encodeURIComponent(gameId)}`
+  );
+
+  console.log("Formulário vindo da API:", form);
+
+  return form;
 }
+
+// export function getForm() {
+//   console.log("Formulário vindo da API:", form);
+//   return request<FormResponse>("/api/forms");
+// }
 
 export function saveFormDraft(payload: FormResponse) {
   return request<FormResponse>("/api/forms/draft", {

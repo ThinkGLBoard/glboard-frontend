@@ -915,8 +915,8 @@ function DimensionSelector({
         {!selected
           ? "Selecione uma dimensão para continuar"
           : (progress.completedDimensions ?? []).includes(
-                selected,
-              )
+            selected,
+          )
             ? `Refazer — ${dimensionMeta[selected].label}`
             : `Iniciar — ${dimensionMeta[selected].label}`}
       </Button>
@@ -1369,9 +1369,9 @@ function Report({
   const overall =
     completedDims.length > 0
       ? completedDims.reduce(
-          (sum, d) => sum + calcDimensionScore(d, progress),
-          0,
-        ) / completedDims.length
+        (sum, d) => sum + calcDimensionScore(d, progress),
+        0,
+      ) / completedDims.length
       : 0;
 
   return (
@@ -1516,7 +1516,7 @@ function Report({
                         .map(
                           (q) =>
                             progress.aprendizagemMultimidia[
-                              q.id
+                            q.id
                             ],
                         )
                         .filter(
@@ -1524,7 +1524,7 @@ function Report({
                         ) as number[];
                       const avg = vals.length
                         ? vals.reduce((a, b) => a + b, 0) /
-                          vals.length
+                        vals.length
                         : null;
                       return (
                         <div
@@ -1573,7 +1573,7 @@ function Report({
                             ) as number[];
                           const avg = vals.length
                             ? vals.reduce((a, b) => a + b, 0) /
-                              vals.length
+                            vals.length
                             : null;
                           return (
                             <div
@@ -1671,13 +1671,35 @@ export function InterfaceEvaluationTab({
 
   const [currentCategoryIndex, setCurrentCategoryIndex] = useState(0);
 
+  // useEffect(() => {
+  //   async function loadForm() {
+  //     try {
+  //       setLoading(true);
+
+  //       const form = await getForm();
+
+  //       console.log("Formulário vindo da API:", form);
+
+  //       setApiForm(form);
+  //     } catch (error) {
+  //       console.error("Erro ao carregar formulário:", error);
+  //       toast.error("Erro ao carregar formulário da API.");
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   }
+
+  //   loadForm();
+  // }, []);
+
   useEffect(() => {
     async function loadForm() {
       try {
         setLoading(true);
 
-        const form = await getForm();
+        const form = await getForm(gameId);
 
+        console.log("Game ID:", gameId);
         console.log("Formulário vindo da API:", form);
 
         setApiForm(form);
@@ -1689,8 +1711,10 @@ export function InterfaceEvaluationTab({
       }
     }
 
-    loadForm();
-  }, []);
+    if (gameId) {
+      loadForm();
+    }
+  }, [gameId]);
 
   const selectedDimension = apiForm?.dimensions.find(
     (dimension) => dimension.id === selectedDimensionId,
@@ -1699,85 +1723,116 @@ export function InterfaceEvaluationTab({
   const currentCategory =
     selectedDimension?.categories[currentCategoryIndex] ?? null;
 
+  function flattenQuestions(questions: ApiQuestion[]): ApiQuestion[] {
+    return questions.flatMap((question) => [
+      question,
+      ...flattenQuestions(question.children ?? []),
+    ]);
+  }
+
   function updateQuestionAnswer(questionId: string, answer: string) {
-    setApiForm((current) => {
-      if (!current) return current;
+  function updateQuestions(questions: ApiQuestion[]): ApiQuestion[] {
+    return questions.map((question) => {
+      if (question.id === questionId) {
+        return {
+          ...question,
+          answer,
+        };
+      }
 
       return {
-        ...current,
-        dimensions: current.dimensions.map((dimension) => ({
-          ...dimension,
-          categories: dimension.categories.map((category) => ({
-            ...category,
-            questions: category.questions.map((question) =>
-              question.id === questionId
-                ? {
-                    ...question,
-                    answer,
-                  }
-                : question,
-            ),
-          })),
-        })),
+        ...question,
+        children: updateQuestions(question.children ?? []),
       };
     });
   }
 
+  setApiForm((current) => {
+    if (!current) return current;
+
+    return {
+      ...current,
+      dimensions: current.dimensions.map((dimension) => ({
+        ...dimension,
+        categories: dimension.categories.map((category) => ({
+          ...category,
+          questions: updateQuestions(category.questions),
+        })),
+      })),
+    };
+  });
+}
+
   function shouldShowQuestion(
-    question: ApiQuestion,
-    allQuestions: ApiQuestion[],
-  ) {
-    if (!question.parentQuestionId) return true;
+  question: ApiQuestion,
+  allQuestions: ApiQuestion[],
+): boolean {
+  if (!question.parentQuestionId) return true;
 
-    const parent = allQuestions.find(
-      (item) => item.id === question.parentQuestionId,
-    );
+  const parent = allQuestions.find(
+    (item) => item.id === question.parentQuestionId,
+  );
 
-    if (!parent) return false;
+  if (!parent) return false;
 
-    return (
-      parent.answer === "true" ||
-      parent.answer === "Sim" ||
-      parent.answer === "sim" ||
-      parent.answer === "1"
-    );
-  }
+  const parentAllowsChildren =
+    parent.answer === "true" ||
+    parent.answer === "Sim" ||
+    parent.answer === "sim" ||
+    parent.answer === "1";
+
+  if (!parentAllowsChildren) return false;
+
+  return shouldShowQuestion(parent, allQuestions);
+}
 
   function getVisibleQuestions() {
-    if (!currentCategory) return [];
+  if (!currentCategory) return [];
 
-    return currentCategory.questions.filter((question) =>
-      shouldShowQuestion(question, currentCategory.questions),
-    );
-  }
+  const allQuestions = flattenQuestions(currentCategory.questions);
+
+  return allQuestions.filter((question) =>
+    shouldShowQuestion(question, allQuestions),
+  );
+}
 
   function isCurrentCategoryComplete() {
-    const visibleQuestions = getVisibleQuestions();
+  const visibleQuestions = getVisibleQuestions();
 
-    return visibleQuestions.every((question) => {
-      return question.answer !== undefined && question.answer !== "";
-    });
-  }
+  return visibleQuestions.every((question) => {
+    return (
+      question.answer !== undefined &&
+      question.answer !== null &&
+      question.answer !== ""
+    );
+  });
+}
 
   function getDimensionProgress() {
-    if (!selectedDimension) return 0;
+  if (!selectedDimension) return 0;
 
-    const allQuestions = selectedDimension.categories.flatMap(
-      (category) => category.questions,
-    );
+  const allQuestions = selectedDimension.categories.flatMap(
+    (category) => flattenQuestions(category.questions),
+  );
 
-    const visibleQuestions = allQuestions.filter((question) =>
-      shouldShowQuestion(question, allQuestions),
-    );
+  const visibleQuestions = allQuestions.filter((question) =>
+    shouldShowQuestion(question, allQuestions),
+  );
 
-    if (visibleQuestions.length === 0) return 0;
+  if (visibleQuestions.length === 0) return 0;
 
     const answered = visibleQuestions.filter(
       (question) => question.answer !== undefined && question.answer !== "",
     ).length;
+  const answered = visibleQuestions.filter(
+    (question) =>
+      question.answer !== undefined &&
+      question.answer !== null &&
+      question.answer !== "",
+  ).length;
 
-    return Math.round((answered / visibleQuestions.length) * 100);
-  }
+  return Math.round((answered / visibleQuestions.length) * 100);
+}
 
   async function handleSaveDraft() {
     if (!apiForm) return;
