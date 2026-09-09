@@ -1821,9 +1821,6 @@ export function InterfaceEvaluationTab({
 
   if (visibleQuestions.length === 0) return 0;
 
-    const answered = visibleQuestions.filter(
-      (question) => question.answer !== undefined && question.answer !== "",
-    ).length;
   const answered = visibleQuestions.filter(
     (question) =>
       question.answer !== undefined &&
