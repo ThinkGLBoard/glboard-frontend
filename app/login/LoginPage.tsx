@@ -9,9 +9,10 @@ import {
 import Image from "next/image";
 import { toast } from "sonner";
 import imgLateral from "../../components/Perfil/imglateral.png";
+import { loginUser } from "@/services/authApi";
 
 interface LoginPageProps {
-  onLogin: (userName?: string, email?: string, userData?: any) => void;
+  onLogin: () => void;
   onNavigate: (page: string) => void;
 }
 
@@ -25,13 +26,14 @@ export function LoginPage({
   });
   const [showPassword, setShowPassword] = useState(false);
   const [emailError, setEmailError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setEmailError("");
 
@@ -40,26 +42,28 @@ export function LoginPage({
       return;
     }
 
-    if (formData.email && formData.password) {
-      // Verificar se o usuário existe no localStorage
-      const usersData = localStorage.getItem("glboard_users"); //RETIRAR
-      const users = usersData ? JSON.parse(usersData) : [];
+    if (!formData.password) {
+      setEmailError("Senha é obrigatória");
+      return;
+    }
 
-      const user = users.find((u: any) => u.email === formData.email);
-
-      if (!user) {
-        setEmailError("E-mail não cadastrado. Crie uma conta primeiro.");
-        return;
-      }
-
-      if (user.password !== formData.password) {
-        setEmailError("Senha incorreta");
-        return;
-      }
-
-      // Login bem-sucedido
+    setIsLoading(true);
+    try {
+      const auth = await loginUser({
+        email: formData.email.trim(),
+        password: formData.password,
+      });
+      sessionStorage.setItem("glboard_auth_token", auth.token);
       toast.success("Login realizado com sucesso!");
-      onLogin(user.firstName, formData.email, user);
+      onLogin();
+    } catch (error) {
+      setEmailError(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível entrar. Tente novamente.",
+      );
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -212,12 +216,13 @@ export function LoginPage({
             {/* Botão Entrar */}
             <button
               type="submit"
-              className="w-full bg-[#166095] text-white py-3 min-h-[44px] rounded-lg font-semibold text-base hover:bg-[#0f4a71] transition-colors mt-4"
+              disabled={isLoading}
+              className="w-full bg-[#166095] text-white py-3 min-h-[44px] rounded-lg font-semibold text-base hover:bg-[#0f4a71] transition-colors mt-4 disabled:opacity-60 disabled:cursor-not-allowed"
               style={{
                 fontFamily: "Arial Rounded MT Bold, sans-serif",
               }}
             >
-              Entrar
+              {isLoading ? "Entrando..." : "Entrar"}
             </button>
           </form>
 

@@ -29,16 +29,25 @@ const metadata: Metadata = {
 
 interface AppLayoutProps {
   children: ReactNode;
-  currentPage: string;
-  onNavigate: (page: string) => void;
-  onLogout: () => void;
-  isLoggedIn: boolean;
+  currentPage?: string;
+  onNavigate?: (page: string) => void;
+  onLogout?: () => void;
+  isLoggedIn?: boolean;
   onLogin?: () => void;
   onSignup?: () => void;
   user?: { name: string; email: string };
 }
 
-export default function AppLayout({ children, currentPage, onNavigate, onLogout, isLoggedIn, onLogin, onSignup, user }: AppLayoutProps) {
+export default function AppLayout({
+  children,
+  currentPage = "landing",
+  onNavigate = () => {},
+  onLogout = () => {},
+  isLoggedIn = false,
+  onLogin,
+  onSignup,
+  user,
+}: AppLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
@@ -55,7 +64,8 @@ export default function AppLayout({ children, currentPage, onNavigate, onLogout,
   };
 
   const isLandingPage = currentPage === 'landing';
-  const isLoginPage = pathname === "/login";
+  const isAuthenticationPage =
+    pathname === "/login" || pathname === "/signup";
   const isAboutPage = currentPage === 'about';
   const isManualPage = currentPage === 'manual';
   const isDocumentationsPage = currentPage === 'documentations';
@@ -72,7 +82,7 @@ export default function AppLayout({ children, currentPage, onNavigate, onLogout,
     <body>
     <div className="min-h-screen bg-background flex flex-col">
       {/* Public Pages Navbar (SharedHeader) */}
-      {!isLoginPage && !isLoggedIn && (
+      {!isAuthenticationPage && !isLoggedIn && (
         <SharedHeader 
           onLogin={onLogin || (() => router.push("/login"))}
           onNavigate={onNavigate}
@@ -82,7 +92,7 @@ export default function AppLayout({ children, currentPage, onNavigate, onLogout,
       )}
 
       {/* Logged-in Pages Navbar */}
-      {!isLoginPage && isLoggedIn && (
+      {!isAuthenticationPage && isLoggedIn && (
         <SharedHeader 
           onLogin={() => {}} 
           onNavigate={onNavigate}
@@ -96,7 +106,7 @@ export default function AppLayout({ children, currentPage, onNavigate, onLogout,
       <main className="flex-1">{children}</main>
 
       {/* Footer */}
-      {!isLoginPage && <AppFooter />}
+      {!isAuthenticationPage && <AppFooter />}
 
       {/* Logout Confirmation Dialog */}
       <AlertDialog open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen}>

@@ -40,11 +40,11 @@ const AVATARS = [
 ];
 
 interface SignupPageProps {
-  onSignup: (userData: any) => void;
+  onSignup: (userData: SignupFormData) => Promise<void>;
   onNavigate: (page: string) => void;
 }
 
-interface FormData {
+export interface SignupFormData {
   firstName: string;
   lastName: string;
   email: string;
@@ -59,6 +59,8 @@ interface FormData {
   avatar: string;
 }
 
+type FormData = SignupFormData;
+
 export function SignupPage({
   onSignup,
   onNavigate,
@@ -68,6 +70,7 @@ export function SignupPage({
   const [showConfirmPassword, setShowConfirmPassword] =
     useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [submissionError, setSubmissionError] = useState("");
 
   const [formData, setFormData] = useState<FormData>({
     firstName: "",
@@ -93,6 +96,7 @@ export function SignupPage({
     value: string | boolean,
   ) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+    setSubmissionError("");
     if (errors[field])
       setErrors((prev) => ({ ...prev, [field]: "" }));
   };
@@ -109,15 +113,6 @@ export function SignupPage({
       !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)
     ) {
       e.email = "Email inválido";
-    } else {
-      // Verificar se o email já está cadastrado
-      const usersData = localStorage.getItem("glboard_users");
-      const users = usersData ? JSON.parse(usersData) : [];
-      const emailExists = users.some((u: any) => u.email === formData.email);
-
-      if (emailExists) {
-        e.email = "Este e-mail já está cadastrado";
-      }
     }
     if (!formData.birthDate)
       e.birthDate = "Data de nascimento é obrigatória";
@@ -168,12 +163,15 @@ export function SignupPage({
   const handleFinalize = async () => {
     if (!validateStep3()) return;
     setIsLoading(true);
+    setSubmissionError("");
     try {
-      await new Promise((r) => setTimeout(r, 300));
-      const avatarSrc =
-        AVATARS.find((a) => a.id === formData.avatar)?.src ||
-        "";
-      onSignup({ ...formData, avatarSrc });
+      await onSignup(formData);
+    } catch (error) {
+      setSubmissionError(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível criar a conta. Tente novamente.",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -930,7 +928,7 @@ export function SignupPage({
                       }}
                     >
                       <img
-                        src={avatar.src}
+                        src={avatar.src.src}
                         alt=""
                         style={{
                           width: "100px",
@@ -965,6 +963,14 @@ export function SignupPage({
                   ? "Criando conta..."
                   : "Finalizar cadastro"}
               </button>
+              {submissionError && (
+                <p
+                  className="text-center text-red-600 text-sm"
+                  role="alert"
+                >
+                  {submissionError}
+                </p>
+              )}
             </div>
           )}
         </div>
@@ -973,7 +979,7 @@ export function SignupPage({
       {/* ── Lado direito — imagem fixa ── */}
       <div className="hidden lg:block w-[636px] flex-shrink-0 h-screen">
         <img
-          src={imgLateral}
+          src={imgLateral.src}
           alt=""
           aria-hidden="true"
           className="w-full h-full object-cover"
