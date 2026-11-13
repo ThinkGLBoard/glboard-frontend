@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   User,
   Menu,
@@ -16,7 +16,23 @@ import {
   Eye,
   MousePointerClick,
   Book,
+  LogOut,
+  UserCircle,
+  FolderOpen,
 } from "lucide-react";
+import DropdownUsuarioPrincipal from "../imports/DropdownUsuarioPrincipal";
+import Frame4635 from "./Perfil/Frame4635.png";
+import Frame5114 from "./Perfil/Frame5114.png";
+import Group4629 from "./Perfil/Group4629.png";
+import Group4631 from "./Perfil/Group4631.png";
+import Group4632 from "./Perfil/Group4632.png";
+import Group4633 from "./Perfil/Group4633.png";
+import Group4636 from "./Perfil/Group4636.png";
+import Group4639 from "./Perfil/Group4639.png";
+import Group4640 from "./Perfil/Group4640.png";
+import Group4641 from "./Perfil/Group4641.png";
+import Group4642 from "./Perfil/Group4642.png";
+import Group5169 from "./Perfil/Group5169.png";
 
 interface SharedHeaderProps {
   onLogin: () => void;
@@ -25,6 +41,10 @@ interface SharedHeaderProps {
   isLoggedIn?: boolean;
   userName?: string;
   currentPage?: string;
+  onLogout?: () => void;
+  onOpenA11y?: () => void;
+  userAvatar?: string;
+  userProfileType?: string;
 }
 
 export function SharedHeader({
@@ -34,15 +54,114 @@ export function SharedHeader({
   isLoggedIn = false,
   userName,
   currentPage,
+  onLogout,
+  onOpenA11y,
+  userAvatar,
+  userProfileType,
 }: SharedHeaderProps) {
+  const displayRole =
+    userProfileType === "student"
+      ? "Estudante"
+      : userProfileType === "teacher"
+        ? "Professor"
+        : userProfileType === "developer"
+          ? "Desenvolvedor"
+          : "Usuário";
+
   const [isMobileMenuOpen, setIsMobileMenuOpen] =
     useState(false);
   const [openSubmenu, setOpenSubmenu] = useState<string | null>(
     null,
   );
+  const [isUserDropdownOpen, setIsUserDropdownOpen] =
+    useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const avatarImages: { [key: number]: string } = {
+  1: Group5169.src,
+  2: Group4629.src,
+  3: Group4631.src,
+  4: Group4639.src,
+  5: Group4636.src,
+  6: Frame5114.src,
+  7: Group4642.src,
+  8: Group4633.src,
+  9: Frame4635.src,
+  10: Group4640.src,
+  11: Group4632.src,
+  12: Group4641.src,
+};
+
+  const [selectedAvatarImage, setSelectedAvatarImage] = useState<string | null>(null);
+
+  // Buscar avatar selecionado do localStorage
+  useEffect(() => {
+    if (isLoggedIn && userName) {
+      const usersData = localStorage.getItem("glboard_users");
+      if (usersData) {
+        const users = JSON.parse(usersData);
+        const currentUser = users.find((u: any) => u.name === userName);
+        if (currentUser?.selectedAvatar && avatarImages[currentUser.selectedAvatar]) {
+          setSelectedAvatarImage(avatarImages[currentUser.selectedAvatar]);
+        }
+      }
+    }
+  }, [isLoggedIn, userName, userAvatar]);
 
   const toggleSubmenu = (menu: string) => {
     setOpenSubmenu(openSubmenu === menu ? null : menu);
+  };
+
+  // Fechar dropdown quando clicar fora
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsUserDropdownOpen(false);
+      }
+    };
+
+    if (isUserDropdownOpen) {
+      document.addEventListener(
+        "mousedown",
+        handleClickOutside,
+      );
+    }
+
+    return () => {
+      document.removeEventListener(
+        "mousedown",
+        handleClickOutside,
+      );
+    };
+  }, [isUserDropdownOpen]);
+
+  const handleUserButtonClick = () => {
+    if (isLoggedIn) {
+      setIsUserDropdownOpen(!isUserDropdownOpen);
+    } else {
+      onLogin();
+    }
+  };
+
+  const handleLogout = () => {
+    setIsUserDropdownOpen(false);
+    // Aqui você pode adicionar a lógica de logout
+    onLogout?.();
+    onNavigate?.("landing");
+  };
+
+  const handleProfileClick = () => {
+    setIsUserDropdownOpen(false);
+    // Navegar para perfil
+    onNavigate?.("user-profile");
+  };
+
+  const handleProjectsClick = () => {
+    setIsUserDropdownOpen(false);
+    onNavigate?.("dashboard");
   };
 
   useEffect(() => {
@@ -85,7 +204,7 @@ export function SharedHeader({
       {/* ==================================================================
           HEADER MOBILE (Barra Vermelha Fixa)
           ================================================================== */}
-      <div className="md:hidden bg-[#781D1C] border-b border-[#631515] relative z-50 h-[64px] flex items-center justify-between px-4">
+      <div className="md:hidden bg-[#781D1C] border-b border-[#631515] relative z-50 min-h-16 flex items-center justify-between px-4">
         {/* Logo */}
         <div
           className="text-2xl text-white cursor-pointer select-none"
@@ -97,13 +216,11 @@ export function SharedHeader({
           GLBoard
         </div>
 
-        {/* Ações (User + Menu) */}
-        <div className="flex items-center gap-3">
-          {/* Ícone de Usuário (Principal ponto de Login/Perfil) */}
+        {/* Ações (User + Acessibilidade + Menu) */}
+        <div className="flex items-center gap-1">
+          {/* Ícone de Usuário */}
           <button
-            onClick={() =>
-              isLoggedIn ? onNavigate?.("dashboard") : onLogin()
-            }
+            onClick={handleUserButtonClick}
             className="text-white hover:text-gray-200 transition-colors p-2 rounded-full hover:bg-white/10"
             aria-label={
               isLoggedIn ? "Meu Perfil" : "Entrar na conta"
@@ -112,7 +229,36 @@ export function SharedHeader({
             <User className="w-6 h-6" />
           </button>
 
-          {/* Botão Menu */}
+          {/* Botão de Acessibilidade — visível direto na barra */}
+          <button
+            onClick={() => onOpenA11y?.()}
+            className="text-white hover:text-gray-200 transition-colors p-2 rounded-full hover:bg-white/10"
+            aria-label="Abrir opções de acessibilidade"
+          >
+            {/* Ícone de olho com raios — representa acessibilidade visual */}
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="w-6 h-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+              />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+              />
+            </svg>
+          </button>
+
+          {/* Botão Menu hamburguer */}
           <button
             onClick={() => setIsMobileMenuOpen(true)}
             className="text-white hover:text-gray-200 transition-colors p-2 rounded-full hover:bg-white/10"
@@ -139,7 +285,7 @@ export function SharedHeader({
           DRAWER (MENU LATERAL)
           ================================================================== */}
       <div
-        className={`fixed top-0 right-0 h-[100dvh] w-[85%] max-w-[340px] bg-white z-[70] shadow-2xl transform transition-transform duration-300 ease-out md:hidden flex flex-col ${
+        className={`fixed top-0 right-0 h-[100dvh] w-full max-w-sm bg-white z-[70] shadow-2xl transform transition-transform duration-300 ease-out md:hidden flex flex-col ${
           isMobileMenuOpen
             ? "translate-x-0"
             : "translate-x-full"
@@ -171,7 +317,7 @@ export function SharedHeader({
               <input
                 type="text"
                 placeholder="Buscar no GLBoard..."
-                className="w-full h-11 pl-10 pr-4 rounded-xl bg-gray-50 border border-gray-200 text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#781D1C]/20 focus:border-[#781D1C] text-sm transition-all"
+                className="w-full min-h-11 pl-10 pr-4 rounded-xl bg-gray-50 border border-gray-200 text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#781D1C]/20 focus:border-[#781D1C] text-sm transition-all"
               />
               <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 group-focus-within:text-[#781D1C]" />
             </div>
@@ -357,11 +503,21 @@ export function SharedHeader({
             {/* Se Logado: Mostra info básica (opcional, mas bom UX) */}
             {isLoggedIn && (
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-[#781D1C] text-white rounded-full flex items-center justify-center font-bold text-lg">
-                  {userName ? (
-                    userName.charAt(0).toUpperCase()
+                <div className="w-10 h-10 bg-[#781D1C] rounded-full flex items-center justify-center overflow-hidden">
+                  {userAvatar ? (
+                    <img
+                      src={userAvatar}
+                      alt="Avatar do usuário"
+                      className="w-full h-full object-cover"
+                    />
                   ) : (
-                    <User className="w-5 h-5" />
+                    <span className="text-white font-bold text-lg">
+                      {userName ? (
+                        userName.charAt(0).toUpperCase()
+                      ) : (
+                        <User className="w-5 h-5 text-white" />
+                      )}
+                    </span>
                   )}
                 </div>
                 <div className="flex flex-col">
@@ -398,16 +554,16 @@ export function SharedHeader({
                   <MousePointerClick className="w-3 h-3" />
                   Ir para conteúdo
                 </a>
-                <a
-                  href="#acessibilidade"
-                  onClick={(e) =>
-                    handleAnchorClick(e, "#acessibilidade")
-                  }
-                  className="flex items-center gap-2 text-xs text-gray-600 hover:text-[#781D1C] py-2 px-1 rounded hover:bg-gray-100 transition-colors"
+                <button
+                  onClick={() => onOpenA11y?.()}
+                  className="hover:text-[#781D1C] transition-colors bg-transparent border-none cursor-pointer"
+                  style={{
+                    fontFamily:
+                      "Arial Rounded MT Bold, sans-serif",
+                  }}
                 >
-                  <Eye className="w-3 h-3" />
-                  Contraste / Opções
-                </a>
+                  Acessibilidade
+                </button>
               </div>
               <div className="mt-4 pt-4 border-t border-gray-200 text-[10px] text-gray-400 flex justify-between">
                 <span>© 2024 GLBoard</span>
@@ -423,7 +579,7 @@ export function SharedHeader({
           ================================================================== */}
       <div className="hidden md:block bg-white">
         <div className="bg-[#F5F9FF] border-b border-gray-200">
-          <div className="max-w-[1200px] mx-auto px-6 py-2 flex items-center justify-between">
+          <div className="mx-auto px-6 py-2 flex items-center justify-between">
             <div
               className="flex items-center gap-12 text-xs text-[#2B2F3D]"
               style={{
@@ -442,42 +598,216 @@ export function SharedHeader({
               >
                 Ir para busca
               </a>
-              <a
-                href="#acessibilidade"
-                className="hover:text-[#781D1C] transition-colors"
+              <button
+                onClick={() => onOpenA11y?.()}
+                className="hover:text-[#781D1C] transition-colors bg-transparent border-none cursor-pointer"
+                style={{
+                  fontFamily:
+                    "Arial Rounded MT Bold, sans-serif",
+                }}
               >
                 Acessibilidade
-              </a>
+              </button>
             </div>
             <div className="flex items-center gap-[10px]">
               <button
                 className="text-[#166095] hover:text-[#781D1C] transition-colors p-[7px]"
                 aria-label="Buscar"
               >
-                <Search className="w-[18px] h-[17.5px]" />
+                <Search className="w-5 h-5" />
               </button>
-              <button
-                onClick={onLogin}
-                className="flex items-center gap-2 px-[10px] py-0 h-[30px] border-[#166095] border-[1.2px] border-solid rounded-full hover:bg-[#E3F2FD] transition-colors cursor-pointer"
-              >
-                <User className="w-[11px] h-[14px] text-[#166095]" />
-                <span
-                  className="text-xs text-[#166095]"
-                  style={{
-                    fontFamily:
-                      "Arial Rounded MT Bold, sans-serif",
-                    letterSpacing: "0.42px",
-                  }}
+              <div className="relative" ref={dropdownRef}>
+                <button
+                  onClick={handleUserButtonClick}
+                  className="flex items-center gap-2 px-2.5 py-0 min-h-8 border-[#166095] border-[1.2px] border-solid rounded-full hover:bg-[#E3F2FD] transition-colors cursor-pointer"
                 >
-                  {isLoggedIn && userName ? userName : "Entrar"}
-                </span>
-              </button>
+                  <User className="w-3 h-3.5 text-[#166095]" />
+                  <span
+                    className="text-xs text-[#166095]"
+                    style={{
+                      fontFamily:
+                        "Arial Rounded MT Bold, sans-serif",
+                      letterSpacing: "0.42px",
+                    }}
+                  >
+                    {isLoggedIn && userName
+                      ? userName
+                      : "Entrar"}
+                  </span>
+                </button>
+
+                {/* Dropdown de Usuário */}
+                {isLoggedIn && isUserDropdownOpen && (
+                  <div className="absolute top-[calc(100%+12px)] right-0 min-w-72 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                    <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
+                      {/* Cabeçalho com Avatar e Nome */}
+                      <div className="bg-white px-6 py-5 border-b border-gray-100">
+                        <div className="flex items-center gap-4">
+                          {/* Avatar azul com inicial */}
+                          <div className="w-14 h-14 bg-[#0082B9] rounded-full flex items-center justify-center overflow-hidden">
+                            {selectedAvatarImage ? (
+                              <img
+                                src={selectedAvatarImage}
+                                alt="Avatar do usuário"
+                                className="w-full h-full object-cover"
+                              />
+                            ) : userAvatar ? (
+                              <img
+                                src={userAvatar}
+                                alt="Avatar do usuário"
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <span className="text-white text-2xl font-bold font-['Poppins']">
+                                {userName
+                                  ? userName
+                                      .charAt(0)
+                                      .toUpperCase()
+                                  : "U"}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-gray-900 font-semibold text-base leading-tight truncate font-['Poppins']">
+                              {userName || "Usuário"}
+                            </p>
+                            <p className="text-gray-500 text-sm mt-1 font-['Poppins']">
+                              {displayRole}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Menu de opções */}
+                      <div className="py-2">
+                        {/* Opção: Jogos */}
+                        <button
+                          onClick={handleProjectsClick}
+                          className="w-full px-6 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors"
+                        >
+                          <svg
+                            className="w-5 h-5 text-gray-700"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              d="M8 6H21"
+                              stroke="currentColor"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                            />
+                            <path
+                              d="M8 12H21"
+                              stroke="currentColor"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                            />
+                            <path
+                              d="M8 18H21"
+                              stroke="currentColor"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                            />
+                            <path
+                              d="M3 6H3.01"
+                              stroke="currentColor"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                            />
+                            <path
+                              d="M3 12H3.01"
+                              stroke="currentColor"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                            />
+                            <path
+                              d="M3 18H3.01"
+                              stroke="currentColor"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                            />
+                          </svg>
+                          <span className="text-sm font-medium text-gray-700 font-['Poppins']">
+                            Jogos
+                          </span>
+                        </button>
+
+                        {/* Opção: Perfil */}
+                        <button
+                          onClick={handleProfileClick}
+                          className="w-full px-6 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors"
+                        >
+                          <svg
+                            className="w-5 h-5 text-gray-700"
+                            fill="none"
+                            viewBox="0 0 20 24"
+                          >
+                            <path
+                              d="M15 8C15 10.2091 13.2091 12 11 12C8.79086 12 7 10.2091 7 8C7 5.79086 8.79086 4 11 4C13.2091 4 15 5.79086 15 8Z"
+                              stroke="currentColor"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                            />
+                            <path
+                              d="M4 19V20C4 21.6569 5.34315 23 7 23H15C16.6569 23 18 21.6569 18 20V19C18 17.3431 16.6569 16 15 16H7C5.34315 16 4 17.3431 4 19Z"
+                              stroke="currentColor"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                            />
+                          </svg>
+                          <span className="text-sm font-medium text-gray-700 font-['Poppins']">
+                            Perfil
+                          </span>
+                        </button>
+
+                        {/* Opção: Sair */}
+                        <button
+                          onClick={handleLogout}
+                          className="w-full px-6 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors"
+                        >
+                          <svg
+                            className="w-5 h-5 text-gray-700"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              d="M9 21H5C3.89543 21 3 20.1046 3 19V5C3 3.89543 3.89543 3 5 3H9"
+                              stroke="currentColor"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                            />
+                            <path
+                              d="M16 17L21 12M21 12L16 7M21 12H9"
+                              stroke="currentColor"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                            />
+                          </svg>
+                          <span className="text-sm font-medium text-gray-700 font-['Poppins']">
+                            Sair
+                          </span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
 
         <div className="bg-[#FDFDFD] border-b border-gray-200">
-          <div className="max-w-[1200px] mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="mx-auto px-6 py-4 flex items-center justify-between">
             <div className="flex items-center gap-[61px]">
               <div
                 className="text-5xl text-[#781D1C] cursor-pointer"
@@ -528,7 +858,7 @@ export function SharedHeader({
 
         <div className="bg-[#8B1E1E]">
           <div
-            className={`max-w-[1200px] mx-auto px-6 py-2 flex items-center gap-6 text-xs text-white ${isLoggedIn ? "justify-between" : ""}`}
+            className={`mx-auto px-6 py-3 flex items-center gap-6 text-sm text-white ${isLoggedIn ? "justify-between" : ""}`}
             role="navigation"
             aria-label="Navegação secundária"
           >
@@ -537,46 +867,63 @@ export function SharedHeader({
                 <button
                   type="button"
                   onClick={() => onNavigate?.("dashboard")}
-                  className={`whitespace-nowrap cursor-pointer py-2 relative hover:opacity-80 ${currentPage === "dashboard" ? "pb-3" : ""}`}
+                  className={`whitespace-nowrap cursor-pointer py-2 relative hover:opacity-80 font-semibold text-sm tracking-wide min-h-11 ${currentPage === "dashboard" ? "pb-3" : ""}`}
+                  aria-current={
+                    currentPage === "dashboard"
+                      ? "page"
+                      : undefined
+                  }
                 >
                   Meus Jogos
                   {currentPage === "dashboard" && (
-                    <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-white rounded-full" />
+                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-white rounded-full" />
                   )}
                 </button>
                 <div className="max-w-md w-96">
-                  <div className="relative">
-                    <input
-                      type="text"
-                      placeholder="Buscar..."
-                      className="w-full px-4 py-1.5 rounded-full bg-white text-gray-700 text-sm focus:outline-none"
-                    />
-                  </div>
+                  <div className="relative"></div>
                 </div>
               </>
             ) : (
               <div className="flex gap-6">
                 <button
                   onClick={() => onNavigate?.("landing")}
-                  className="whitespace-nowrap py-2 hover:opacity-80"
+                  className="whitespace-nowrap py-2 hover:opacity-80 font-semibold text-sm tracking-wide min-h-11"
+                  aria-current={
+                    currentPage === "landing"
+                      ? "page"
+                      : undefined
+                  }
                 >
                   Tela inicial
                 </button>
                 <button
                   onClick={() => onNavigate?.("manual")}
-                  className="whitespace-nowrap py-2 hover:opacity-80"
+                  className="whitespace-nowrap py-2 hover:opacity-80 font-semibold text-sm tracking-wide min-h-11"
+                  aria-current={
+                    currentPage === "manual"
+                      ? "page"
+                      : undefined
+                  }
                 >
                   Manual de Uso
                 </button>
                 <button
                   onClick={() => onNavigate?.("documentations")}
-                  className="whitespace-nowrap py-2 hover:opacity-80"
+                  className="whitespace-nowrap py-2 hover:opacity-80 font-semibold text-sm tracking-wide min-h-11"
+                  aria-current={
+                    currentPage === "documentations"
+                      ? "page"
+                      : undefined
+                  }
                 >
                   Documentação
                 </button>
                 <button
                   onClick={() => onNavigate?.("about")}
-                  className="whitespace-nowrap py-2 hover:opacity-80"
+                  className="whitespace-nowrap py-2 hover:opacity-80 font-semibold text-sm tracking-wide min-h-11"
+                  aria-current={
+                    currentPage === "about" ? "page" : undefined
+                  }
                 >
                   Sobre Nós
                 </button>

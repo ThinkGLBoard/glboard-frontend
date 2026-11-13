@@ -9,6 +9,7 @@ import { AlertDialog, AlertDialogContent, AlertDialogTitle, AlertDialogDescripti
 import { AppFooter } from "@/components/AppFooter";
 import { ReactNode, useState } from "react";
 import { SharedHeader } from "@/components/SharedHeader";
+import { usePathname, useRouter } from "next/navigation";
 
 const poppins = Poppins({
   variable: "--font-poppins",
@@ -38,6 +39,8 @@ interface AppLayoutProps {
 }
 
 export default function AppLayout({ children, currentPage, onNavigate, onLogout, isLoggedIn, onLogin, onSignup, user }: AppLayoutProps) {
+  const pathname = usePathname();
+  const router = useRouter();
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
@@ -52,6 +55,7 @@ export default function AppLayout({ children, currentPage, onNavigate, onLogout,
   };
 
   const isLandingPage = currentPage === 'landing';
+  const isLoginPage = pathname === "/login";
   const isAboutPage = currentPage === 'about';
   const isManualPage = currentPage === 'manual';
   const isDocumentationsPage = currentPage === 'documentations';
@@ -68,9 +72,9 @@ export default function AppLayout({ children, currentPage, onNavigate, onLogout,
     <body>
     <div className="min-h-screen bg-background flex flex-col">
       {/* Public Pages Navbar (SharedHeader) */}
-      {!isLoggedIn && (
+      {!isLoginPage && !isLoggedIn && (
         <SharedHeader 
-          onLogin={onLogin || (() => {})} 
+          onLogin={onLogin || (() => router.push("/login"))}
           onNavigate={onNavigate}
           isLoggedIn={isLoggedIn}
           currentPage={currentPage}
@@ -78,7 +82,7 @@ export default function AppLayout({ children, currentPage, onNavigate, onLogout,
       )}
 
       {/* Logged-in Pages Navbar */}
-      {isLoggedIn && (
+      {!isLoginPage && isLoggedIn && (
         <SharedHeader 
           onLogin={() => {}} 
           onNavigate={onNavigate}
@@ -92,7 +96,7 @@ export default function AppLayout({ children, currentPage, onNavigate, onLogout,
       <main className="flex-1">{children}</main>
 
       {/* Footer */}
-      <AppFooter />
+      {!isLoginPage && <AppFooter />}
 
       {/* Logout Confirmation Dialog */}
       <AlertDialog open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen}>
