@@ -4,9 +4,8 @@ import type { Metadata } from "next";
 import { Geist_Mono, Poppins } from "next/font/google";
 import "./globals.css";
 import { NavigationMenu } from "@radix-ui/react-navigation-menu";
-import { AlertDialogHeader, AlertDialogFooter } from "@/ui/alert-dialog";
-import { AlertDialog, AlertDialogContent, AlertDialogTitle, AlertDialogDescription, AlertDialogCancel, AlertDialogAction } from "@radix-ui/react-alert-dialog";
 import { AppFooter } from "@/components/AppFooter";
+import { LogoutConfirmationDialog } from "@/components/LogoutConfirmationDialog";
 import { ReactNode, useEffect, useState } from "react";
 import { SharedHeader } from "@/components/SharedHeader";
 import { usePathname, useRouter } from "next/navigation";
@@ -103,6 +102,7 @@ export default function AppLayout({
     setAuthSession({ isLoggedIn: false, user: undefined });
     window.dispatchEvent(new Event("glboard-auth-changed"));
     onLogout();
+    router.push("/");
   };
 
   const isLandingPage = currentPage === 'landing';
@@ -138,6 +138,7 @@ export default function AppLayout({
         <SharedHeader 
           onLogin={() => {}} 
           onNavigate={handleNavigate}
+          onLogout={handleLogoutClick}
           isLoggedIn={isLoggedIn}
           userName={user?.name.split(' ')[0] || 'Usuário'}
           currentPage={currentPage}
@@ -150,23 +151,11 @@ export default function AppLayout({
       {/* Footer */}
       {!isAuthenticationPage && <AppFooter />}
 
-      {/* Logout Confirmation Dialog */}
-      <AlertDialog open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Deseja realmente sair do GLBoard?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Você será redirecionado para a página inicial e precisará fazer login novamente para acessar seus jogos.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmLogout} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Sim, sair
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <LogoutConfirmationDialog
+        isOpen={logoutDialogOpen}
+        onOpenChange={setLogoutDialogOpen}
+        onConfirm={confirmLogout}
+      />
     </div>
     </body>
     </html>

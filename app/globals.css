@@ -1,4 +1,7 @@
 @import "tailwindcss";
+@source "../components/LogoutConfirmationDialog.tsx";
+@source "../ui/alert-dialog.tsx";
+@source "../ui/button.tsx";
 
 @custom-variant dark (&:is(.dark *));
 

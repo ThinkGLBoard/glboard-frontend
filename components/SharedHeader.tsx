@@ -148,9 +148,11 @@ export function SharedHeader({
 
   const handleLogout = () => {
     setIsUserDropdownOpen(false);
-    // Aqui você pode adicionar a lógica de logout
-    onLogout?.();
-    onNavigate?.("landing");
+    if (onLogout) {
+      onLogout();
+    } else {
+      onNavigate?.("landing");
+    }
   };
 
   const handleProfileClick = () => {
