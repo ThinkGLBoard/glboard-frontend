@@ -54,6 +54,12 @@ export function LoginPage({
         password: formData.password,
       });
       sessionStorage.setItem("glboard_auth_token", auth.token);
+      if (auth.name) {
+        sessionStorage.setItem("glboard_auth_user_name", auth.name);
+      } else {
+        sessionStorage.removeItem("glboard_auth_user_name");
+      }
+      window.dispatchEvent(new Event("glboard-auth-changed"));
       toast.success("Login realizado com sucesso!");
       onLogin();
     } catch (error) {

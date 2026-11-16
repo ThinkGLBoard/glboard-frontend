@@ -13,6 +13,63 @@ export interface RegisterRequest {
 export interface AuthResponse {
   message: string | null;
   token: string;
+  name: string | null;
+}
+
+function getUserName(body: unknown, token: string) {
+  if (typeof body === "object" && body !== null) {
+    const data = body as Record<string, unknown>;
+    const user =
+      typeof data.user === "object" && data.user !== null
+        ? (data.user as Record<string, unknown>)
+        : null;
+    const name = [data.name, data.userName, user?.name].find(
+      (value): value is string =>
+        typeof value === "string" && Boolean(value.trim()),
+    );
+
+    if (name) {
+      return name.trim();
+    }
+  }
+
+  const encodedPayload = token.split(".")[1];
+  if (!encodedPayload) {
+    return null;
+  }
+
+  try {
+    const base64 = encodedPayload
+      .replace(/-/g, "+")
+      .replace(/_/g, "/");
+    const bytes = Uint8Array.from(
+      atob(base64.padEnd(Math.ceil(base64.length / 4) * 4, "=")),
+      (character) => character.charCodeAt(0),
+    );
+    const claims = JSON.parse(new TextDecoder().decode(bytes)) as Record<
+      string,
+      unknown
+    >;
+    const fullName = [claims.given_name, claims.family_name]
+      .filter((part): part is string => typeof part === "string")
+      .join(" ")
+      .trim();
+
+    for (const candidate of [
+      claims.name,
+      claims.unique_name,
+      claims.preferred_username,
+      fullName,
+    ]) {
+      if (typeof candidate === "string" && candidate.trim()) {
+        return candidate.trim();
+      }
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
 }
 
 function getErrorMessage(body: unknown, status: number) {
@@ -73,6 +130,7 @@ async function requestAuth(
         ? responseBody.message
         : null,
     token: responseBody.token,
+    name: getUserName(responseBody, responseBody.token),
   };
 }
 

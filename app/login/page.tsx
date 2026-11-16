@@ -12,7 +12,7 @@ export default function LoginRoute() {
 
   return (
     <LoginPage
-      onLogin={() => router.push("/")}
+      onLogin={() => router.push("/view-all-games")}
       onNavigate={handleNavigate}
     />
   );

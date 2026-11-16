@@ -7,7 +7,7 @@ import { NavigationMenu } from "@radix-ui/react-navigation-menu";
 import { AlertDialogHeader, AlertDialogFooter } from "@/ui/alert-dialog";
 import { AlertDialog, AlertDialogContent, AlertDialogTitle, AlertDialogDescription, AlertDialogCancel, AlertDialogAction } from "@radix-ui/react-alert-dialog";
 import { AppFooter } from "@/components/AppFooter";
-import { ReactNode, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { SharedHeader } from "@/components/SharedHeader";
 import { usePathname, useRouter } from "next/navigation";
 
@@ -43,16 +43,39 @@ export default function AppLayout({
   currentPage = "landing",
   onNavigate = () => {},
   onLogout = () => {},
-  isLoggedIn = false,
+  isLoggedIn: initialIsLoggedIn = false,
   onLogin,
   onSignup,
-  user,
+  user: initialUser,
 }: AppLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
+  const [authSession, setAuthSession] = useState({
+    isLoggedIn: initialIsLoggedIn,
+    user: initialUser,
+  });
+
+  useEffect(() => {
+    const syncAuthSession = () => {
+      const token = sessionStorage.getItem("glboard_auth_token");
+      const name = sessionStorage.getItem("glboard_auth_user_name");
+      setAuthSession({
+        isLoggedIn: Boolean(token),
+        user: token ? { name: name || "Usuário", email: "" } : undefined,
+      });
+    };
+
+    syncAuthSession();
+    window.addEventListener("glboard-auth-changed", syncAuthSession);
+    return () =>
+      window.removeEventListener("glboard-auth-changed", syncAuthSession);
+  }, []);
+
+  const isLoggedIn = authSession.isLoggedIn;
+  const user = authSession.user;
 
   const handleLogoutClick = () => {
     setLogoutDialogOpen(true);
@@ -60,6 +83,10 @@ export default function AppLayout({
 
   const confirmLogout = () => {
     setLogoutDialogOpen(false);
+    sessionStorage.removeItem("glboard_auth_token");
+    sessionStorage.removeItem("glboard_auth_user_name");
+    setAuthSession({ isLoggedIn: false, user: undefined });
+    window.dispatchEvent(new Event("glboard-auth-changed"));
     onLogout();
   };
 
