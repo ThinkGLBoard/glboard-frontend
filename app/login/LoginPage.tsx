@@ -10,6 +10,7 @@ import Image from "next/image";
 import { toast } from "sonner";
 import imgLateral from "../../components/Perfil/imglateral.png";
 import { loginUser } from "@/services/authApi";
+import { storeAuthSession } from "@/services/authSession";
 
 interface LoginPageProps {
   onLogin: () => void;
@@ -53,14 +54,7 @@ export function LoginPage({
         email: formData.email.trim(),
         password: formData.password,
       });
-      sessionStorage.setItem("glboard_auth_token", auth.token);
-      sessionStorage.setItem("glboard_auth_email", formData.email.trim());
-      if (auth.name) {
-        sessionStorage.setItem("glboard_auth_user_name", auth.name);
-      } else {
-        sessionStorage.removeItem("glboard_auth_user_name");
-      }
-      window.dispatchEvent(new Event("glboard-auth-changed"));
+      storeAuthSession(auth, formData.email.trim());
       toast.success("Login realizado com sucesso!");
       onLogin();
     } catch (error) {

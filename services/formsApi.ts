@@ -1,7 +1,5 @@
-const API_URL = "http://localhost:5208";
+const API_URL = "http://localhost:8080";
 
-// const TEMP_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImpAZ21haWwuY29tIiwicm9sZSI6IlVzZXIiLCJuYW1laWQiOiJiNWVjZTEzYS0wODNkLTQ2YmEtOWRkZC04YTdlZTY5NmQxYzkiLCJuYW1lIjoic3RyaW5nIiwibmJmIjoxNzgxMDUzOTAzLCJleHAiOjE3ODEwNTc1MDMsImlhdCI6MTc4MTA1MzkwMywiaXNzIjoiQVBJLUV4ZW1wbG8iLCJhdWQiOiJDbGllbnQtRXhlbXBsbyJ9.7qbSCcovKwonV-zymompPGwCvf4QaTFB_8Q5PFcy39U";
-const TEMP_TOKEN = "TOPEN_GENERATED_FOR_DEMO_PURPOSES";
 export interface ApiOption {
   id: string;
   label: string;
@@ -43,11 +41,22 @@ async function request<T>(
   endpoint: string,
   options?: RequestInit,
 ): Promise<T> {
+  const token =
+    typeof window === "undefined"
+      ? null
+      : sessionStorage.getItem("glboard_auth_token");
+
+  if (!token) {
+    throw new Error(
+      "É necessário estar autenticado para acessar os formulários.",
+    );
+  }
+
   const response = await fetch(`${API_URL}${endpoint}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${TEMP_TOKEN}`,
+      Authorization: `Bearer ${token}`,
       ...(options?.headers ?? {}),
     },
   });

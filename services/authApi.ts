@@ -4,6 +4,7 @@ const API_URL =
 export interface RegisterRequest {
   name: string;
   email: string;
+  cpf: string;
   password: string;
   role: "User";
   birthday: string;
@@ -84,6 +85,25 @@ function getErrorMessage(body: unknown, status: number) {
         return data[key];
       }
     }
+    if (typeof data.Message === "string" && data.Message) {
+      return data.Message;
+    }
+
+    const errors = data.errors;
+    if (typeof errors === "object" && errors !== null) {
+      for (const messages of Object.values(errors)) {
+        if (typeof messages === "string" && messages) {
+          return messages;
+        }
+        if (
+          Array.isArray(messages) &&
+          typeof messages[0] === "string" &&
+          messages[0]
+        ) {
+          return messages[0];
+        }
+      }
+    }
   }
 
   return `A API recusou a solicitação (HTTP ${status}).`;
@@ -92,7 +112,7 @@ function getErrorMessage(body: unknown, status: number) {
 async function requestAuth(
   endpoint: "/auth/register" | "/auth/login",
   payload: RegisterRequest | { email: string; password: string },
-): Promise<AuthResponse> {
+): Promise<unknown> {
   const response = await fetch(`${API_URL}${endpoint}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -113,6 +133,20 @@ async function requestAuth(
     throw new Error(getErrorMessage(responseBody, response.status));
   }
 
+  return responseBody;
+}
+
+export async function registerUser(
+  payload: RegisterRequest,
+): Promise<void> {
+  await requestAuth("/auth/register", payload);
+}
+
+export async function loginUser(payload: {
+  email: string;
+  password: string;
+}) {
+  const responseBody = await requestAuth("/auth/login", payload);
   if (
     typeof responseBody !== "object" ||
     responseBody === null ||
@@ -131,16 +165,5 @@ async function requestAuth(
         : null,
     token: responseBody.token,
     name: getUserName(responseBody, responseBody.token),
-  };
-}
-
-export function registerUser(payload: RegisterRequest) {
-  return requestAuth("/auth/register", payload);
-}
-
-export function loginUser(payload: {
-  email: string;
-  password: string;
-}) {
-  return requestAuth("/auth/login", payload);
+  } satisfies AuthResponse;
 }

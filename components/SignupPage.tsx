@@ -48,6 +48,7 @@ export interface SignupFormData {
   firstName: string;
   lastName: string;
   email: string;
+  cpf: string;
   birthDate: string;
   phone: string;
   password: string;
@@ -60,6 +61,15 @@ export interface SignupFormData {
 }
 
 type FormData = SignupFormData;
+
+function formatCpf(value: string) {
+  return value
+    .replace(/\D/g, "")
+    .slice(0, 11)
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+}
 
 export function SignupPage({
   onSignup,
@@ -76,6 +86,7 @@ export function SignupPage({
     firstName: "",
     lastName: "",
     email: "",
+    cpf: "",
     birthDate: "",
     phone: "",
     password: "",
@@ -114,6 +125,8 @@ export function SignupPage({
     ) {
       e.email = "Email inválido";
     }
+    if (!/^\d{11}$/.test(formData.cpf))
+      e.cpf = "CPF deve conter 11 números";
     if (!formData.birthDate)
       e.birthDate = "Data de nascimento é obrigatória";
     if (!formData.phone.trim())
@@ -377,6 +390,43 @@ export function SignupPage({
                       role="alert"
                     >
                       {errors.email}
+                    </p>
+                  )}
+                </div>
+
+                <div className="mb-4">
+                  <label
+                    htmlFor="cpf"
+                    className="block mb-1 text-sm font-semibold text-[#2B2F3D]"
+                    style={{ fontFamily: "Poppins, sans-serif" }}
+                  >
+                    CPF *
+                  </label>
+                  <input
+                    id="cpf"
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="off"
+                    placeholder="000.000.000-00"
+                    value={formatCpf(formData.cpf)}
+                    onChange={(e) =>
+                      updateField(
+                        "cpf",
+                        e.target.value.replace(/\D/g, "").slice(0, 11),
+                      )
+                    }
+                    aria-invalid={!!errors.cpf}
+                    aria-describedby={errors.cpf ? "err-cpf" : undefined}
+                    className={`w-full px-4 py-3 min-h-[44px] border-2 ${errors.cpf ? "border-red-500" : "border-gray-300"} rounded-lg text-sm focus:outline-none focus:border-[#166095]`}
+                    style={{ fontFamily: "Poppins, sans-serif" }}
+                  />
+                  {errors.cpf && (
+                    <p
+                      id="err-cpf"
+                      className="mt-1 text-red-600 text-xs"
+                      role="alert"
+                    >
+                      {errors.cpf}
                     </p>
                   )}
                 </div>

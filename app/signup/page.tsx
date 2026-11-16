@@ -12,9 +12,12 @@ export default function SignupRoute() {
   };
 
   const handleSignup = async (userData: SignupFormData) => {
+    const name = `${userData.firstName.trim()} ${userData.lastName.trim()}`;
+    const email = userData.email.trim();
     await registerUser({
-      name: `${userData.firstName.trim()} ${userData.lastName.trim()}`,
-      email: userData.email.trim(),
+      name,
+      email,
+      cpf: userData.cpf,
       password: userData.password,
       role: "User",
       birthday: `${userData.birthDate}T00:00:00.000Z`,
