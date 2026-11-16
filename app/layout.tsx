@@ -9,6 +9,7 @@ import { LogoutConfirmationDialog } from "@/components/LogoutConfirmationDialog"
 import { ReactNode, useEffect, useState } from "react";
 import { SharedHeader } from "@/components/SharedHeader";
 import { usePathname, useRouter } from "next/navigation";
+import { Toaster } from "sonner";
 
 const poppins = Poppins({
   variable: "--font-poppins",
@@ -147,6 +148,8 @@ export default function AppLayout({
 
       {/* Main Content */}
       <main className="flex-1">{children}</main>
+
+      <Toaster />
 
       {/* Footer */}
       {!isAuthenticationPage && <AppFooter />}

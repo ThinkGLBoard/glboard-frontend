@@ -96,7 +96,7 @@ export function AppFooter() {
         {/* Copyright */}
         <div className="mt-16 text-center text-sm font-medium text-white/80 font-['Poppins',sans-serif]">
           <p>
-            © 2024 GAMETED. Site desenvolvido pela equipe
+            © 2026 GLBOARD. Site desenvolvido pela equipe
             ThinkTEd
           </p>
         </div>

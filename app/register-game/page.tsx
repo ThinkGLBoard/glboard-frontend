@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useRef, useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/ui/button";
@@ -9,87 +10,91 @@ import { Label } from "@/ui/label";
 import { Textarea } from "@/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/select";
-import { Save, X, Upload, FileText, Image as ImageIcon, File, Trash2 } from "lucide-react";
+import { LoaderCircle, Save, X, Upload, FileText, Image as ImageIcon, File, Trash2 } from "lucide-react";
 import { Separator } from "@/ui/separator";
 import { Badge } from "@/ui/badge";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/ui/form";
 import { gameFormSchema, type GameFormValues, type UploadedFile } from "./schema";
+import { toast } from "sonner";
+import { createGame, getGamePlatforms, type GamePlatform } from "@/services/gamesApi";
 
-interface Game {
-  id: string;
-  name: string;
-  status: 'development' | 'testing' | 'completed';
-  targetAudience?: string;
-  platform?: string;
-  genre?: string;
-  story?: string;
-  gameplay?: string;
-  gameFlow?: string;
-  learningMechanics?: string;
-  learningObjectives?: string;
-  bnccSkills?: string;
-  createdDate?: string;
-  phases?: number;
-  files?: UploadedFile[];
-}
-
-interface GameRegistrationProps {
-  onNavigate: (page: string) => void;
-  onSaveGame: (gameData: any) => void;
-  gameId?: string;
-  games?: Game[];
-}
-
-export default function GameRegistration({ onNavigate, onSaveGame, gameId, games }: GameRegistrationProps) {
-  const currentGame = games?.find(g => g.id === gameId);
+export default function GameRegistration() {
+  const router = useRouter();
+  const selectedFiles = useRef(new Map<string, File>());
+  const [platforms, setPlatforms] = useState<GamePlatform[]>([]);
+  const [platformError, setPlatformError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<GameFormValues>({
     resolver: zodResolver(gameFormSchema),
     defaultValues: {
-      name: currentGame?.name || "",
-      targetAudience: currentGame?.targetAudience || "",
-      platform: currentGame?.platform || "",
-      genre: currentGame?.genre || "",
-      story: currentGame?.story || "",
-      gameplay: currentGame?.gameplay || "",
-      gameFlow: currentGame?.gameFlow || "",
-      learningMechanics: currentGame?.learningMechanics || "",
-      learningObjectives: currentGame?.learningObjectives || "",
-      bnccSkills: currentGame?.bnccSkills || "",
-      status: currentGame?.status || "development",
-      files: currentGame?.files || [],
+      name: "",
+      targetAudience: "",
+      platformId: "",
+      genre: "",
+      story: "",
+      gameplay: "",
+      gameFlow: "",
+      learningMechanics: "",
+      learningObjectives: "",
+      bnccSkills: "",
+      status: "development",
+      files: [],
     },
   });
 
-  // Sincronizar arquivos com o formulário
   useEffect(() => {
-    const subscription = form.watch((value, { name }) => {
-      if (name === 'files') {
-        // Atualizar estado local se necessário
-      }
-    });
-    return () => subscription.unsubscribe();
-  }, [form]);
+    let active = true;
+    getGamePlatforms()
+      .then((items) => {
+        if (active) {
+          setPlatforms(items);
+        }
+      })
+      .catch((error: unknown) => {
+        if (active) {
+          setPlatformError(
+            error instanceof Error
+              ? error.message
+              : "Não foi possível carregar as plataformas.",
+          );
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>, type: 'egdd' | 'draft' | 'screenshot') => {
     const files = event.target.files;
     if (!files) return;
 
-    const newFiles: UploadedFile[] = Array.from(files).map(file => ({
-      id: Date.now().toString() + Math.random(),
-      name: file.name,
-      size: file.size,
-      type: type,
-      uploadDate: new Date().toISOString()
-    }));
+    const newFiles: UploadedFile[] = Array.from(files).map((file) => {
+      const id = crypto.randomUUID();
+      selectedFiles.current.set(id, file);
+      return {
+        id,
+        name: file.name,
+        size: file.size,
+        type,
+        uploadDate: new Date().toISOString(),
+      };
+    });
 
     const currentFiles = form.getValues('files') || [];
-    form.setValue('files', [...currentFiles, ...newFiles]);
+    form.setValue('files', [...currentFiles, ...newFiles], {
+      shouldDirty: true,
+    });
+    event.currentTarget.value = "";
   };
 
   const handleDeleteFile = (fileId: string) => {
     const currentFiles = form.getValues('files') || [];
-    form.setValue('files', currentFiles.filter(f => f.id !== fileId));
+    selectedFiles.current.delete(fileId);
+    form.setValue('files', currentFiles.filter(f => f.id !== fileId), {
+      shouldDirty: true,
+    });
   };
 
   const formatFileSize = (bytes: number): string => {
@@ -116,9 +121,21 @@ export default function GameRegistration({ onNavigate, onSaveGame, gameId, games
     }
   };
 
-  const handleSubmit = (values: GameFormValues) => {
-    onSaveGame(values);
-    onNavigate('dashboard');
+  const handleSubmit = async (values: GameFormValues) => {
+    setIsSubmitting(true);
+    try {
+      await createGame(values, selectedFiles.current);
+      toast.success("Jogo cadastrado com sucesso!");
+      router.push("/view-all-games");
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível cadastrar o jogo.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -126,15 +143,12 @@ export default function GameRegistration({ onNavigate, onSaveGame, gameId, games
       <div className="max-w-4xl mx-auto space-y-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="font-heading">{gameId ? 'Editar Jogo' : 'Cadastrar Novo Jogo'}</h1>
+            <h1 className="font-heading">Cadastrar Novo Jogo</h1>
             <p className="text-muted-foreground mt-1">
-              {gameId 
-                ? 'Atualize as informações e documentos do seu jogo educacional'
-                : 'Defina a estrutura do seu jogo educacional e objetivos de aprendizagem'
-              }
+              Defina a estrutura do seu jogo educacional e objetivos de aprendizagem
             </p>
           </div>
-          <Button variant="outline" onClick={() => onNavigate('dashboard')} className="rounded-xl">
+          <Button variant="outline" onClick={() => router.push("/view-all-games")} className="rounded-xl">
             <X className="mr-2 w-4 h-4" />
             Cancelar
           </Button>
@@ -145,12 +159,9 @@ export default function GameRegistration({ onNavigate, onSaveGame, gameId, games
             {/* Main Card with all fields */}
             <Card className="rounded-2xl">
             <CardHeader>
-              <CardTitle>{gameId ? 'Editar Informações' : 'Informações do Jogo'}</CardTitle>
+              <CardTitle>Informações do Jogo</CardTitle>
               <CardDescription>
-                {gameId
-                  ? 'Atualize os detalhes do seu jogo educacional'
-                  : 'Preencha os detalhes essenciais sobre seu jogo educacional'
-                }
+                Preencha os detalhes essenciais sobre seu jogo educacional
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -181,7 +192,7 @@ export default function GameRegistration({ onNavigate, onSaveGame, gameId, games
                 name="targetAudience"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Público-alvo</FormLabel>
+                    <FormLabel>Público-alvo *</FormLabel>
                     <FormControl>
                       <Input
                         placeholder="ex: Estudantes do ensino fundamental (6-10 anos)"
@@ -199,17 +210,41 @@ export default function GameRegistration({ onNavigate, onSaveGame, gameId, games
               {/* Plataforma */}
               <FormField
                 control={form.control}
-                name="platform"
+                name="platformId"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Plataforma</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="ex: Web, Mobile (iOS/Android)"
-                        className="rounded-xl"
-                        {...field}
-                      />
-                    </FormControl>
+                    <Select
+                      onValueChange={(value) =>
+                        field.onChange(value === "no-platform" ? "" : value)
+                      }
+                      value={field.value || "no-platform"}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="rounded-xl">
+                          <SelectValue placeholder="Selecione a plataforma" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="no-platform">
+                          Não especificada
+                        </SelectItem>
+                        {platforms.map((platform) => (
+                          <SelectItem key={platform.id} value={platform.id}>
+                            {platform.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {platformError ? (
+                      <FormDescription className="text-destructive">
+                        Não foi possível carregar as plataformas: {platformError}
+                      </FormDescription>
+                    ) : platforms.length === 0 ? (
+                      <FormDescription>
+                        Nenhuma plataforma cadastrada na API.
+                      </FormDescription>
+                    ) : null}
                     <FormMessage />
                   </FormItem>
                 )}
@@ -223,7 +258,7 @@ export default function GameRegistration({ onNavigate, onSaveGame, gameId, games
                 name="genre"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Gênero do Jogo</FormLabel>
+                    <FormLabel>Gênero do Jogo *</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger className="rounded-xl">
@@ -253,7 +288,7 @@ export default function GameRegistration({ onNavigate, onSaveGame, gameId, games
                 name="story"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>História</FormLabel>
+                    <FormLabel>História *</FormLabel>
                     <FormControl>
                       <Textarea
                         placeholder="Descreva a história e o contexto narrativo do jogo"
@@ -274,7 +309,7 @@ export default function GameRegistration({ onNavigate, onSaveGame, gameId, games
                 name="gameplay"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Gameplay</FormLabel>
+                    <FormLabel>Gameplay *</FormLabel>
                     <FormControl>
                       <Textarea
                         placeholder="Descreva como o jogo é jogado e suas mecânicas principais"
@@ -295,7 +330,7 @@ export default function GameRegistration({ onNavigate, onSaveGame, gameId, games
                 name="gameFlow"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Fluxo do jogo</FormLabel>
+                    <FormLabel>Fluxo do jogo *</FormLabel>
                     <FormControl>
                       <Textarea
                         placeholder="Descreva o fluxo e a progressão do jogo"
@@ -316,7 +351,7 @@ export default function GameRegistration({ onNavigate, onSaveGame, gameId, games
                 name="learningMechanics"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Mecânica de aprendizagem</FormLabel>
+                    <FormLabel>Mecânica de aprendizagem *</FormLabel>
                     <FormControl>
                       <Textarea
                         placeholder="Descreva as mecânicas pedagógicas utilizadas"
@@ -337,7 +372,7 @@ export default function GameRegistration({ onNavigate, onSaveGame, gameId, games
                 name="learningObjectives"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Objetivos de aprendizagem</FormLabel>
+                    <FormLabel>Objetivos de aprendizagem *</FormLabel>
                     <FormControl>
                       <Textarea
                         placeholder="Quais são os objetivos de aprendizagem do jogo?"
@@ -420,7 +455,7 @@ export default function GameRegistration({ onNavigate, onSaveGame, gameId, games
                     id="egddUpload"
                     type="file"
                     multiple
-                    accept=".pdf,.doc,.docx,.txt"
+                    accept=".pdf,application/pdf"
                     onChange={(e) => handleFileUpload(e, 'egdd')}
                     className="hidden"
                   />
@@ -437,7 +472,7 @@ export default function GameRegistration({ onNavigate, onSaveGame, gameId, games
                   </Button>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Formatos aceitos: PDF, DOC, DOCX, TXT
+                  Formato aceito: PDF
                 </p>
               </div>
 
@@ -454,7 +489,7 @@ export default function GameRegistration({ onNavigate, onSaveGame, gameId, games
                     id="draftUpload"
                     type="file"
                     multiple
-                    accept=".pdf,.doc,.docx,.txt,.xls,.xlsx"
+                    accept=".pdf,application/pdf"
                     onChange={(e) => handleFileUpload(e, 'draft')}
                     className="hidden"
                   />
@@ -471,7 +506,7 @@ export default function GameRegistration({ onNavigate, onSaveGame, gameId, games
                   </Button>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Formatos aceitos: PDF, DOC, DOCX, TXT, XLS, XLSX
+                  Formato aceito: PDF
                 </p>
               </div>
 
@@ -488,7 +523,7 @@ export default function GameRegistration({ onNavigate, onSaveGame, gameId, games
                     id="screenshotUpload"
                     type="file"
                     multiple
-                    accept="image/*"
+                    accept=".png,.jpg,.jpeg,.gif,image/png,image/jpeg,image/gif"
                     onChange={(e) => handleFileUpload(e, 'screenshot')}
                     className="hidden"
                   />
@@ -505,7 +540,7 @@ export default function GameRegistration({ onNavigate, onSaveGame, gameId, games
                   </Button>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Formatos aceitos: PNG, JPG, JPEG, GIF, SVG
+                  Formatos aceitos: PNG, JPG, JPEG e GIF
                 </p>
               </div>
 
@@ -555,12 +590,16 @@ export default function GameRegistration({ onNavigate, onSaveGame, gameId, games
 
           {/* Action Buttons */}
           <div className="flex justify-end gap-4 pt-4">
-            <Button type="button" variant="outline" onClick={() => onNavigate('dashboard')} className="rounded-xl">
+            <Button type="button" variant="outline" onClick={() => router.push("/view-all-games")} className="rounded-xl" disabled={isSubmitting}>
               Cancelar
             </Button>
-            <Button type="submit" className="rounded-xl">
-              <Save className="mr-2 w-4 h-4" />
-              {gameId ? 'Atualizar Jogo' : 'Salvar Jogo'}
+            <Button type="submit" className="rounded-xl" disabled={isSubmitting}>
+              {isSubmitting ? (
+                <LoaderCircle className="mr-2 w-4 h-4 animate-spin" />
+              ) : (
+                <Save className="mr-2 w-4 h-4" />
+              )}
+              {isSubmitting ? "Salvando..." : "Salvar Jogo"}
             </Button>
           </div>
           </form>

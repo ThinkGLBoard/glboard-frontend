@@ -50,19 +50,11 @@ import {
   ArrowUpDown,
 } from "lucide-react";
 import { ImageWithFallback } from "./ImageWithFallback";
-
-interface Game {
-  id: string;
-  name: string;
-  createdDate: string;
-  phases: number;
-  genre?: string;
-  status: "development" | "testing" | "completed";
-}
+import type { GameSummary } from "@/services/gamesApi";
 
 interface DashboardProps {
   onNavigate: (page: string, gameId?: string) => void;
-  games: Game[];
+  games: GameSummary[];
   onDeleteGame: (id: string) => void;
 }
 
@@ -429,7 +421,7 @@ export default function Dashboard({
               {/* Botão Novo Jogo e View Mode Toggle */}
               <div className="flex gap-3 items-center self-end lg:self-auto">
                 <Button
-                  // onClick={() => onNavigate("game-registration")}
+                  onClick={() => onNavigate("register-game")}
                   className="rounded-xl h-10 px-5 bg-[#6366F1] hover:bg-[#5558E3] text-white"
                 >
                   <Plus className="mr-2 w-4 h-4" />

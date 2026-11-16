@@ -59,6 +59,160 @@ interface EvaluationProgress {
 
 type Screen = "selector" | "evaluation" | "report";
 
+interface ResumePosition {
+  dimensionId: string;
+  categoryId: string;
+  questionId: string | null;
+}
+
+function flattenQuestions(questions: ApiQuestion[]): ApiQuestion[] {
+  return questions.flatMap((question) => [
+    question,
+    ...flattenQuestions(question.children ?? []),
+  ]);
+}
+
+function hasAnswer(question: ApiQuestion): boolean {
+  const { answer } = question;
+  return (
+    answer !== null &&
+    answer !== undefined &&
+    answer !== "" &&
+    (!Array.isArray(answer) || answer.length > 0)
+  );
+}
+
+function shouldShowQuestion(
+  question: ApiQuestion,
+  allQuestions: ApiQuestion[],
+): boolean {
+  if (!question.parentQuestionId) return true;
+
+  const parent = allQuestions.find(
+    (item) => item.id === question.parentQuestionId,
+  );
+  if (!parent) return false;
+
+  const parentAllowsChildren =
+    parent.answer === true ||
+    parent.answer === "true" ||
+    parent.answer === "Sim" ||
+    parent.answer === "sim" ||
+    parent.answer === "1";
+
+  return (
+    parentAllowsChildren && shouldShowQuestion(parent, allQuestions)
+  );
+}
+
+function getVisibleQuestionsFor(questions: ApiQuestion[]): ApiQuestion[] {
+  const allQuestions = flattenQuestions(questions);
+  return allQuestions.filter((question) =>
+    shouldShowQuestion(question, allQuestions),
+  );
+}
+
+function getResumeStorageKey(gameId: string): string {
+  return `glboard_form_resume_${gameId}`;
+}
+
+function saveResumePosition(
+  gameId: string,
+  position: ResumePosition,
+): void {
+  try {
+    localStorage.setItem(getResumeStorageKey(gameId), JSON.stringify(position));
+  } catch (error) {
+    console.error("Não foi possível salvar a posição da avaliação:", error);
+  }
+}
+
+function clearResumePosition(gameId: string): void {
+  try {
+    localStorage.removeItem(getResumeStorageKey(gameId));
+  } catch (error) {
+    console.error("Não foi possível remover a posição da avaliação:", error);
+  }
+}
+
+function getResumePosition(
+  gameId: string,
+  form: FormResponse,
+): (ResumePosition & { categoryIndex: number }) | null {
+  try {
+    const stored = localStorage.getItem(getResumeStorageKey(gameId));
+    if (stored) {
+      const position = JSON.parse(stored) as ResumePosition;
+      const dimension = form.dimensions.find(
+        (item) => item.id === position.dimensionId,
+      );
+      const categoryIndex =
+        dimension?.categories.findIndex(
+          (item) => item.id === position.categoryId,
+        ) ?? -1;
+      const category = dimension?.categories[categoryIndex];
+
+      if (dimension && categoryIndex >= 0 && category) {
+        const visibleQuestions = getVisibleQuestionsFor(category.questions);
+        const questionId =
+          visibleQuestions.find(
+            (question) => question.id === position.questionId,
+          )?.id ?? visibleQuestions.find((question) => !hasAnswer(question))?.id ?? null;
+
+        return {
+          dimensionId: dimension.id,
+          categoryId: category.id,
+          categoryIndex,
+          questionId,
+        };
+      }
+    }
+  } catch (error) {
+    console.error("Não foi possível carregar a posição da avaliação:", error);
+  }
+
+  for (const dimension of form.dimensions) {
+    const hasProgress = dimension.categories.some((category) =>
+      getVisibleQuestionsFor(category.questions).some(hasAnswer),
+    );
+    if (!hasProgress) continue;
+
+    let lastAnsweredPosition: (ResumePosition & { categoryIndex: number }) | null =
+      null;
+
+    for (const [categoryIndex, category] of dimension.categories.entries()) {
+      const visibleQuestions = getVisibleQuestionsFor(category.questions);
+      if (visibleQuestions.length === 0) continue;
+
+      const nextQuestion = visibleQuestions.find((question) => !hasAnswer(question));
+      if (nextQuestion) {
+        return {
+          dimensionId: dimension.id,
+          categoryId: category.id,
+          categoryIndex,
+          questionId: nextQuestion.id,
+        };
+      }
+
+      const lastAnsweredQuestion = [...visibleQuestions]
+        .reverse()
+        .find(hasAnswer);
+      if (lastAnsweredQuestion) {
+        lastAnsweredPosition = {
+          dimensionId: dimension.id,
+          categoryId: category.id,
+          categoryIndex,
+          questionId: lastAnsweredQuestion.id,
+        };
+      }
+    }
+
+    return lastAnsweredPosition;
+  }
+
+  return null;
+}
+
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
 const multimediaPrinciples: MultimediaPrinciple[] = [
@@ -610,18 +764,21 @@ const LIKERT_LABELS = [
 function LikertInput({
   value,
   onChange,
+  max = 5,
 }: {
   value?: number;
   onChange: (v: number) => void;
+  max?: 5 | 7;
 }) {
   return (
     <div className="mt-4">
       <div className="flex items-start justify-center gap-2 sm:gap-4">
-        {[1, 2, 3, 4, 5].map((score) => (
+        {Array.from({ length: max }, (_, index) => index + 1).map((score) => (
           <button
             key={score}
+            type="button"
             onClick={() => onChange(score)}
-            aria-label={LIKERT_LABELS[score - 1]}
+            aria-label={LIKERT_LABELS[score - 1] ?? String(score)}
             className="flex flex-col items-center gap-2 flex-1 max-w-[80px] group"
           >
             <div
@@ -643,7 +800,7 @@ function LikertInput({
                   : "text-[#a0a0a0]",
               ].join(" ")}
             >
-              {LIKERT_LABELS[score - 1]}
+              {LIKERT_LABELS[score - 1] ?? score}
             </span>
           </button>
         ))}
@@ -1670,6 +1827,7 @@ export function InterfaceEvaluationTab({
   );
 
   const [currentCategoryIndex, setCurrentCategoryIndex] = useState(0);
+  const [resumeQuestionId, setResumeQuestionId] = useState<string | null>(null);
 
   // useEffect(() => {
   //   async function loadForm() {
@@ -1696,6 +1854,10 @@ export function InterfaceEvaluationTab({
     async function loadForm() {
       try {
         setLoading(true);
+        setScreen("selector");
+        setSelectedDimensionId(null);
+        setCurrentCategoryIndex(0);
+        setResumeQuestionId(null);
 
         const form = await getForm(gameId);
 
@@ -1703,6 +1865,13 @@ export function InterfaceEvaluationTab({
         console.log("Formulário vindo da API:", form);
 
         setApiForm(form);
+        const resumePosition = getResumePosition(gameId, form);
+        if (resumePosition) {
+          setSelectedDimensionId(resumePosition.dimensionId);
+          setCurrentCategoryIndex(resumePosition.categoryIndex);
+          setResumeQuestionId(resumePosition.questionId);
+          setScreen("evaluation");
+        }
       } catch (error) {
         console.error("Erro ao carregar formulário:", error);
         toast.error("Erro ao carregar formulário da API.");
@@ -1723,14 +1892,29 @@ export function InterfaceEvaluationTab({
   const currentCategory =
     selectedDimension?.categories[currentCategoryIndex] ?? null;
 
-  function flattenQuestions(questions: ApiQuestion[]): ApiQuestion[] {
-    return questions.flatMap((question) => [
-      question,
-      ...flattenQuestions(question.children ?? []),
-    ]);
-  }
+  useEffect(() => {
+    if (!resumeQuestionId || screen !== "evaluation") return;
 
-  function updateQuestionAnswer(questionId: string, answer: string) {
+    const frameId = window.requestAnimationFrame(() => {
+      document
+        .getElementById(`form-question-${resumeQuestionId}`)
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+      setResumeQuestionId(null);
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
+  }, [
+    apiForm,
+    currentCategoryIndex,
+    resumeQuestionId,
+    screen,
+    selectedDimensionId,
+  ]);
+
+  function updateQuestionAnswer(
+    questionId: string,
+    answer: ApiQuestion["answer"],
+  ) {
   function updateQuestions(questions: ApiQuestion[]): ApiQuestion[] {
     return questions.map((question) => {
       if (question.id === questionId) {
@@ -1763,48 +1947,17 @@ export function InterfaceEvaluationTab({
   });
 }
 
-  function shouldShowQuestion(
-  question: ApiQuestion,
-  allQuestions: ApiQuestion[],
-): boolean {
-  if (!question.parentQuestionId) return true;
-
-  const parent = allQuestions.find(
-    (item) => item.id === question.parentQuestionId,
-  );
-
-  if (!parent) return false;
-
-  const parentAllowsChildren =
-    parent.answer === "true" ||
-    parent.answer === "Sim" ||
-    parent.answer === "sim" ||
-    parent.answer === "1";
-
-  if (!parentAllowsChildren) return false;
-
-  return shouldShowQuestion(parent, allQuestions);
-}
-
   function getVisibleQuestions() {
   if (!currentCategory) return [];
 
-  const allQuestions = flattenQuestions(currentCategory.questions);
-
-  return allQuestions.filter((question) =>
-    shouldShowQuestion(question, allQuestions),
-  );
+  return getVisibleQuestionsFor(currentCategory.questions);
 }
 
   function isCurrentCategoryComplete() {
   const visibleQuestions = getVisibleQuestions();
 
   return visibleQuestions.every((question) => {
-    return (
-      question.answer !== undefined &&
-      question.answer !== null &&
-      question.answer !== ""
-    );
+    return hasAnswer(question);
   });
 }
 
@@ -1822,24 +1975,44 @@ export function InterfaceEvaluationTab({
   if (visibleQuestions.length === 0) return 0;
 
   const answered = visibleQuestions.filter(
-    (question) =>
-      question.answer !== undefined &&
-      question.answer !== null &&
-      question.answer !== "",
+    (question) => {
+      return hasAnswer(question);
+    },
   ).length;
 
   return Math.round((answered / visibleQuestions.length) * 100);
 }
 
+  function getCurrentResumePosition(): ResumePosition | null {
+    if (!selectedDimension || !currentCategory) return null;
+
+    const questions = getVisibleQuestions();
+    const question =
+      questions.find((item) => !hasAnswer(item)) ??
+      [...questions].reverse().find(hasAnswer);
+
+    return {
+      dimensionId: selectedDimension.id,
+      categoryId: currentCategory.id,
+      questionId: question?.id ?? null,
+    };
+  }
+
   async function handleSaveDraft() {
     if (!apiForm) return;
 
     try {
-      await saveFormDraft(apiForm);
+      await saveFormDraft(gameId, apiForm);
+      const position = getCurrentResumePosition();
+      if (position) {
+        saveResumePosition(gameId, position);
+      }
       toast.success("Progresso salvo com sucesso!");
     } catch (error) {
       console.error("Erro ao salvar rascunho:", error);
-      toast.error("Erro ao salvar progresso.");
+      toast.error(
+        error instanceof Error ? error.message : "Erro ao salvar progresso.",
+      );
     }
   }
 
@@ -1847,16 +2020,20 @@ export function InterfaceEvaluationTab({
     if (!apiForm) return;
 
     try {
-      await submitForm(apiForm);
+      await submitForm(gameId, apiForm);
+      clearResumePosition(gameId);
       toast.success("Avaliação enviada com sucesso!");
       setScreen("report");
     } catch (error) {
       console.error("Erro ao enviar avaliação:", error);
-      toast.error("Erro ao enviar avaliação.");
+      toast.error(
+        error instanceof Error ? error.message : "Erro ao enviar avaliação.",
+      );
     }
   }
 
   function handleSelectDimension(dimensionId: string) {
+    setResumeQuestionId(null);
     setSelectedDimensionId(dimensionId);
     setCurrentCategoryIndex(0);
     setScreen("evaluation");
@@ -1906,7 +2083,7 @@ export function InterfaceEvaluationTab({
             onClick={() => updateQuestionAnswer(question.id, "true")}
             className={[
               "flex items-center gap-2 px-5 py-2.5 rounded-lg border-2 text-sm font-semibold transition-colors",
-              question.answer === "true"
+              question.answer === "true" || question.answer === true
                 ? "bg-[#8B1A1A] border-[#8B1A1A] text-white"
                 : "bg-white border-[#d4d4d4] text-[#4a4a4a] hover:border-[#8B1A1A] hover:text-[#8B1A1A]",
             ].join(" ")}
@@ -1918,7 +2095,7 @@ export function InterfaceEvaluationTab({
             onClick={() => updateQuestionAnswer(question.id, "false")}
             className={[
               "flex items-center gap-2 px-5 py-2.5 rounded-lg border-2 text-sm font-semibold transition-colors",
-              question.answer === "false"
+              question.answer === "false" || question.answer === false
                 ? "bg-[#4a4a4a] border-[#4a4a4a] text-white"
                 : "bg-white border-[#d4d4d4] text-[#4a4a4a] hover:border-[#4a4a4a] hover:text-[#1a1a1a]",
             ].join(" ")}
@@ -1929,19 +2106,98 @@ export function InterfaceEvaluationTab({
       );
     }
 
-    if (type === "likert" || type === "scale" || type === "number") {
+    if (type === "multiplechoice" || type === "checkbox") {
+      const isMultiple = type === "checkbox";
+      const selectedValues = Array.isArray(question.answer)
+        ? question.answer
+        : question.answer == null
+          ? []
+          : [String(question.answer)];
+
+      return (
+        <div className="mt-4 space-y-2">
+          {question.options.map((option) => {
+            const isSelected = selectedValues.includes(option.value);
+
+            return (
+              <label
+                key={option.id}
+                className={[
+                  "flex cursor-pointer items-start gap-3 rounded-lg border px-4 py-3 text-sm transition-colors",
+                  isSelected
+                    ? "border-[#8B1A1A] bg-[#fdf5f5] text-[#8B1A1A]"
+                    : "border-[#d4d4d4] bg-white text-[#4a4a4a] hover:border-[#8B1A1A]",
+                ].join(" ")}
+              >
+                <input
+                  type={isMultiple ? "checkbox" : "radio"}
+                  name={question.id}
+                  checked={isSelected}
+                  onChange={() => {
+                    if (!isMultiple) {
+                      updateQuestionAnswer(question.id, option.value);
+                      return;
+                    }
+
+                    updateQuestionAnswer(
+                      question.id,
+                      isSelected
+                        ? selectedValues.filter((value) => value !== option.value)
+                        : [...selectedValues, option.value],
+                    );
+                  }}
+                  className="mt-0.5 accent-[#8B1A1A]"
+                />
+                <span>{option.label}</span>
+              </label>
+            );
+          })}
+        </div>
+      );
+    }
+
+    if (type === "likert5" || type === "likert7" || type === "likert" || type === "scale") {
       return (
         <LikertInput
-          value={question.answer ? Number(question.answer) : undefined}
+          value={
+            question.answer !== null && question.answer !== ""
+              ? Number(question.answer)
+              : undefined
+          }
+          max={type === "likert7" ? 7 : 5}
           onChange={(value) => updateQuestionAnswer(question.id, String(value))}
         />
       );
     }
 
-    if (type === "text" || type === "textarea" || type === "longtext") {
+    if (type === "number") {
+      return (
+        <input
+          type="number"
+          value={typeof question.answer === "number" || typeof question.answer === "string" ? question.answer : ""}
+          onChange={(event) =>
+            updateQuestionAnswer(question.id, event.target.value)
+          }
+          className="mt-4 w-full rounded-lg border border-[#d4d4d4] px-3 py-2 text-sm text-[#1a1a1a] outline-none focus:border-[#8B1A1A]"
+        />
+      );
+    }
+
+    if (
+      type === "text" ||
+      type === "textarea" ||
+      type === "longtext" ||
+      type === "file"
+    ) {
       return (
         <textarea
-          value={question.answer ?? ""}
+          value={
+            typeof question.answer === "string"
+              ? question.answer
+              : question.answer == null
+                ? ""
+                : JSON.stringify(question.answer)
+          }
           onChange={(event) =>
             updateQuestionAnswer(question.id, event.target.value)
           }
@@ -1953,7 +2209,11 @@ export function InterfaceEvaluationTab({
 
     return (
       <LikertInput
-        value={question.answer ? Number(question.answer) : undefined}
+        value={
+          question.answer !== null && question.answer !== ""
+            ? Number(question.answer)
+            : undefined
+        }
         onChange={(value) => updateQuestionAnswer(question.id, String(value))}
       />
     );
@@ -2147,6 +2407,7 @@ export function InterfaceEvaluationTab({
               {visibleQuestions.map((question, index) => (
                 <div
                   key={question.id}
+                  id={`form-question-${question.id}`}
                   className="rounded-lg border border-[#e5e5e5] bg-white px-4 py-4"
                 >
                   <div className="flex gap-2">
