@@ -54,6 +54,7 @@ export function LoginPage({
         password: formData.password,
       });
       sessionStorage.setItem("glboard_auth_token", auth.token);
+      sessionStorage.setItem("glboard_auth_email", formData.email.trim());
       if (auth.name) {
         sessionStorage.setItem("glboard_auth_user_name", auth.name);
       } else {

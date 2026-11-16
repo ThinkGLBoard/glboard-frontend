@@ -11,14 +11,11 @@ import {
   Save,
 } from "lucide-react";
 import { toast } from "sonner";
-import { InputWithLabel } from "./ui/input-with-label";
+import { InputWithLabel } from "../ui/input-with-label";
 import { DeleteAccountDialog } from "./DeleteAccountDialog";
 import { EditConfirmationDialog } from "./EditConfirmationDialog";
 import { SaveSuccessDialog } from "./SaveSuccessDialog";
 import { AvatarSelectionDialog } from "./AvatarSelectionDialog";
-import personagemImg from "../../imports/image-4.png";
-import passwordIllustration from "../../imports/Group_4773.png";
-import emailMascotImg from "../../imports/Group_5177-2.png";
 import Frame4635 from "./Perfil/Frame4635.png";
 import Frame5114 from "./Perfil/Frame5114.png";
 import Group4629 from "./Perfil/Group4629.png";
@@ -483,12 +480,8 @@ export function UserProfilePage({
               {/* Cabeçalho Centralizado */}
               <div className="flex flex-col items-center gap-6 w-full text-center">
                 {/* Ilustração do mascote */}
-                <div className="w-36 min-h-40">
-                  <img
-                    src={emailMascotImg}
-                    alt="Mascote pensativo"
-                    className="block w-full h-full object-contain"
-                  />
+                <div className="w-36 min-h-40 flex items-center justify-center">
+                  <Mail className="w-20 h-20 text-[#166095]" aria-hidden="true" />
                 </div>
 
                 {/* Título */}
@@ -593,11 +586,7 @@ export function UserProfilePage({
               <div className="flex flex-col items-center gap-6 w-full text-center">
                 {/* Ilustração do mascote com cadeado e exclamações */}
                 <div className="w-48 min-h-48 flex items-center justify-center">
-                  <img
-                    src={passwordIllustration}
-                    alt="Ilustração de cadeado com exclamações"
-                    className="block w-full h-full object-contain"
-                  />
+                  <Lock className="w-24 h-24 text-[#166095]" aria-hidden="true" />
                 </div>
 
                 {/* Título */}

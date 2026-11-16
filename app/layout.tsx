@@ -41,7 +41,7 @@ interface AppLayoutProps {
 export default function AppLayout({
   children,
   currentPage = "landing",
-  onNavigate = () => {},
+  onNavigate,
   onLogout = () => {},
   isLoggedIn: initialIsLoggedIn = false,
   onLogin,
@@ -77,6 +77,20 @@ export default function AppLayout({
   const isLoggedIn = authSession.isLoggedIn;
   const user = authSession.user;
 
+  const handleNavigate = (page: string) => {
+    if (onNavigate) {
+      onNavigate(page);
+      return;
+    }
+
+    if (page === "landing") {
+      router.push("/");
+      return;
+    }
+
+    router.push(page === "dashboard" ? "/view-all-games" : `/${page}`);
+  };
+
   const handleLogoutClick = () => {
     setLogoutDialogOpen(true);
   };
@@ -84,6 +98,7 @@ export default function AppLayout({
   const confirmLogout = () => {
     setLogoutDialogOpen(false);
     sessionStorage.removeItem("glboard_auth_token");
+    sessionStorage.removeItem("glboard_auth_email");
     sessionStorage.removeItem("glboard_auth_user_name");
     setAuthSession({ isLoggedIn: false, user: undefined });
     window.dispatchEvent(new Event("glboard-auth-changed"));
@@ -112,7 +127,7 @@ export default function AppLayout({
       {!isAuthenticationPage && !isLoggedIn && (
         <SharedHeader 
           onLogin={onLogin || (() => router.push("/login"))}
-          onNavigate={onNavigate}
+          onNavigate={handleNavigate}
           isLoggedIn={isLoggedIn}
           currentPage={currentPage}
         />
@@ -122,7 +137,7 @@ export default function AppLayout({
       {!isAuthenticationPage && isLoggedIn && (
         <SharedHeader 
           onLogin={() => {}} 
-          onNavigate={onNavigate}
+          onNavigate={handleNavigate}
           isLoggedIn={isLoggedIn}
           userName={user?.name.split(' ')[0] || 'Usuário'}
           currentPage={currentPage}

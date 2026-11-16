@@ -499,11 +499,21 @@ export default function Dashboard({
                     >
                       {/* Thumbnail */}
                       <div className="relative h-52 bg-gray-100 overflow-hidden">
-                        <img
-                          src={gameImages[game.id] || ""}
-                          alt={game.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        />
+                        {gameImages[game.id] ? (
+                          <img
+                            src={gameImages[game.id]}
+                            alt={game.name}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          />
+                        ) : (
+                          <div
+                            role="img"
+                            aria-label={`Imagem indisponível para ${game.name}`}
+                            className="flex h-full w-full items-center justify-center text-gray-400"
+                          >
+                            <Gamepad2 className="h-12 w-12" aria-hidden="true" />
+                          </div>
+                        )}
                         {/* Status Badge */}
                         <div className="absolute top-4 right-4">
                           <div
@@ -606,11 +616,21 @@ export default function Dashboard({
                         <div className="flex items-center gap-6">
                           {/* Thumbnail */}
                           <div className="relative w-28 h-24 flex-shrink-0 rounded-lg overflow-hidden bg-gradient-to-br from-primary/10 to-accent/10">
-                            <img
-                              src={gameImages[game.id] || ""}
-                              alt={game.name}
-                              className="w-full h-full object-cover"
-                            />
+                            {gameImages[game.id] ? (
+                              <img
+                                src={gameImages[game.id]}
+                                alt={game.name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div
+                                role="img"
+                                aria-label={`Imagem indisponível para ${game.name}`}
+                                className="flex h-full w-full items-center justify-center text-gray-400"
+                              >
+                                <Gamepad2 className="h-8 w-8" aria-hidden="true" />
+                              </div>
+                            )}
                           </div>
                           {/* Info */}
                           <div className="flex-1 min-w-0">
