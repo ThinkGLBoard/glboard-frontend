@@ -109,7 +109,7 @@ function Group8() {
     <div className="grid-cols-[max-content] grid-rows-[max-content] inline-grid items-[start] justify-items-[start] leading-[0] relative shrink-0">
       <div className="col-1 h-[54.952px] ml-0 mt-0 relative row-1 w-[165.786px]" data-name="84f96f1317c54f63ac0dc7532456b0a4 1">
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <img alt="" className="absolute h-[217.6%] left-[-14.31%] max-w-none top-[-55.27%] w-[126.93%]" src={img84F96F1317C54F63Ac0Dc7532456B0A41} />
+          <img alt="" className="absolute h-[217.6%] left-[-14.31%] max-w-none top-[-55.27%] w-[126.93%]" src={img84F96F1317C54F63Ac0Dc7532456B0A41.src} />
         </div>
       </div>
     </div>
@@ -205,7 +205,7 @@ function Group9() {
     <div className="grid-cols-[max-content] grid-rows-[max-content] inline-grid items-[start] justify-items-[start] leading-[0] relative shrink-0">
       <div className="col-1 h-[60.221px] ml-0 mt-0 relative row-1 w-[108.399px]" data-name="8 1">
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <img alt="" className="absolute h-[190.81%] left-[-3.7%] max-w-none top-[-20.33%] w-[107.41%]" src={img81} />
+          <img alt="" className="absolute h-[190.81%] left-[-3.7%] max-w-none top-[-20.33%] w-[107.41%]" src={img81.src} />
         </div>
       </div>
     </div>
@@ -240,7 +240,7 @@ function Frame1() {
       <Group9 />
       <div className="h-[78px] relative shrink-0 w-[138px]" data-name="image 4">
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <img alt="" className="absolute h-[141%] left-[-2.46%] max-w-none top-[-7.81%] w-[105.2%]" src={imgImage4} />
+          <img alt="" className="absolute h-[141%] left-[-2.46%] max-w-none top-[-7.81%] w-[105.2%]" src={imgImage4.src} />
         </div>
       </div>
       <Camada />

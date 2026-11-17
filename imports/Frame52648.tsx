@@ -17,7 +17,7 @@ export default function Frame1() {
   return (
     <div className="content-stretch flex gap-[167px] items-center justify-center px-0 py-[128px] relative size-full">
       <div className="h-[391px] relative shrink-0 w-[558px]" data-name="Frame 5263 10">
-        <img alt="" className="absolute inset-0 max-w-none object-cover pointer-events-none size-full" src={imgFrame526310} />
+        <img alt="" className="absolute inset-0 max-w-none object-cover pointer-events-none size-full" src={imgFrame526310.src} />
       </div>
       <Frame />
     </div>

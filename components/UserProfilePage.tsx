@@ -180,7 +180,7 @@ export function UserProfilePage({
     setShowSaveSuccessDialog(true);
   };
 
-  const avatarImages: { [key: number]: string } = {
+  const avatarImages: Record<number, typeof Group5169> = {
     1: Group5169,
     2: Group4629,
     3: Group4631,
@@ -311,7 +311,7 @@ export function UserProfilePage({
                   <div className="w-40 h-40 rounded-full overflow-hidden">
                     {currentAvatarId && avatarImages[currentAvatarId] ? (
                       <img
-                        src={avatarImages[currentAvatarId]}
+                        src={avatarImages[currentAvatarId].src}
                         alt="Avatar"
                         className="w-full h-full object-cover"
                       />

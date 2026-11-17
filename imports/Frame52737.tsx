@@ -52,7 +52,7 @@ function Frame5() {
   return (
     <div className="content-stretch flex flex-col gap-[16px] items-center justify-center relative shrink-0 w-full">
       <div className="h-[253.22px] relative shrink-0 w-[373.074px]" data-name="Frame 52731 1">
-        <img alt="" className="absolute inset-0 max-w-none object-cover pointer-events-none size-full" src={imgFrame527311} />
+        <img alt="" className="absolute inset-0 max-w-none object-cover pointer-events-none size-full" src={imgFrame527311.src} />
       </div>
       <Group44 />
     </div>
@@ -785,7 +785,7 @@ function Frame9() {
   return (
     <div className="content-stretch flex flex-col gap-[16px] items-center justify-center relative shrink-0 w-full">
       <div className="h-[253.22px] relative shrink-0 w-[373.074px]" data-name="Frame 52733 1">
-        <img alt="" className="absolute inset-0 max-w-none object-cover pointer-events-none size-full" src={imgFrame527331} />
+        <img alt="" className="absolute inset-0 max-w-none object-cover pointer-events-none size-full" src={imgFrame527331.src} />
       </div>
       <Group47 />
     </div>
@@ -848,7 +848,7 @@ function Frame10() {
   return (
     <div className="absolute content-stretch flex flex-col gap-[16px] items-center justify-center left-[257px] top-[1596.44px] w-[390px]">
       <div className="h-[253.22px] relative shrink-0 w-[373.074px]" data-name="Frame 52733 1">
-        <img alt="" className="absolute inset-0 max-w-none object-cover pointer-events-none size-full" src={imgFrame527332} />
+        <img alt="" className="absolute inset-0 max-w-none object-cover pointer-events-none size-full" src={imgFrame527332.src} />
       </div>
       <Group48 />
     </div>
@@ -902,7 +902,7 @@ function Frame34() {
   return (
     <div className="absolute content-stretch flex flex-col gap-[16px] items-center justify-center left-[257px] top-[262px] w-[390px]">
       <div className="h-[253.22px] relative shrink-0 w-[373.074px]" data-name="Frame 52731 1">
-        <img alt="" className="absolute inset-0 max-w-none object-cover pointer-events-none size-full" src={imgFrame527311} />
+        <img alt="" className="absolute inset-0 max-w-none object-cover pointer-events-none size-full" src={imgFrame527311.src} />
       </div>
       <Group49 />
     </div>
@@ -1626,7 +1626,7 @@ function Frame49() {
   return (
     <div className="content-stretch flex flex-col gap-[16px] items-center justify-center relative shrink-0 w-full">
       <div className="h-[253.22px] relative shrink-0 w-[373.074px]" data-name="Frame 52733 1">
-        <img alt="" className="absolute inset-0 max-w-none object-cover pointer-events-none size-full" src={imgFrame527331} />
+        <img alt="" className="absolute inset-0 max-w-none object-cover pointer-events-none size-full" src={imgFrame527331.src} />
       </div>
       <Group52 />
     </div>

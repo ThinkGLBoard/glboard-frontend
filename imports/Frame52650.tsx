@@ -59,7 +59,7 @@ function Frame4() {
     <div className="content-stretch flex gap-[60px] h-[392px] items-center justify-center relative shrink-0 w-full">
       <Frame2 />
       <div className="h-[566px] relative shrink-0 w-[833px]" data-name="image 19">
-        <img alt="" className="absolute inset-0 max-w-none object-cover pointer-events-none size-full" src={imgImage19} />
+        <img alt="" className="absolute inset-0 max-w-none object-cover pointer-events-none size-full" src={imgImage19.src} />
       </div>
     </div>
   );

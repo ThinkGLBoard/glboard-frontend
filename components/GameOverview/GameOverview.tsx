@@ -145,11 +145,19 @@ export function GameOverview({
         <div className="py-2 md:py-[8px]">
           {/* Header do Jogo */}
           <div className="mb-8">
-            <h1 className="font-['Arial_Rounded_MT_Bold'] leading-tight m-[0px] text-[32px] sm:text-[40px] md:text-[48px] text-[#166095] mb-3">
-              {currentGame?.name || "Hello Food"}
+            <h1
+              className="font-arial-rounded leading-tight m-[0px] text-[40px] text-[#166095] mb-3"
+            >
+              {currentGame?.name || "Jogo não encontrado"}
             </h1>
             <p className="font-['Poppins'] text-[16px] sm:text-[18px] text-[rgba(112,111,111,0.75)] leading-relaxed">
-              Quebra-cabeça Educacional • Em Desenvolvimento
+             {currentGame?.genre || "Gênero não disponível"} - {currentGame?.status === "development"
+  ? "Em desenvolvimento"
+  : currentGame?.status === "testing"
+    ? "Em teste"
+    : currentGame?.status === "completed"
+      ? "Concluído"
+      : "Status não disponível"}
             </p>
           </div>
 
@@ -201,7 +209,6 @@ export function GameOverview({
               {activeTab === "interface" && (
                 <InterfaceEvaluationTab
                   gameId={gameId}
-                  onNavigateBack={() => onNavigate("dashboard")}
                 />
               )}
 

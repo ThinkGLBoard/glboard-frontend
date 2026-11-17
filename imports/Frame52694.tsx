@@ -289,7 +289,7 @@ export default function Frame19() {
     <div className="content-stretch flex items-center justify-between px-[200px] py-0 relative size-full">
       <Group />
       <div className="h-[687px] relative shrink-0 w-[673px]" data-name="Frame 52693 1">
-        <img alt="" className="absolute inset-0 max-w-none object-cover pointer-events-none size-full" src={imgFrame526931} />
+        <img alt="" className="absolute inset-0 max-w-none object-cover pointer-events-none size-full" src={imgFrame526931.src} />
       </div>
     </div>
   );

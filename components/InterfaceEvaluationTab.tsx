@@ -2419,10 +2419,6 @@ export function InterfaceEvaluationTab({
                       <p className="text-sm text-[#1a1a1a] leading-relaxed">
                         {question.text}
                       </p>
-
-                      <p className="text-[11px] text-[#a0a0a0] mt-1">
-                        Tipo: {question.type}
-                      </p>
                     </div>
                   </div>
 

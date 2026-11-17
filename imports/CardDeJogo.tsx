@@ -6,7 +6,7 @@ export default function CardDeJogo() {
     <div className="bg-[#fdfdfd] overflow-clip relative rounded-[10px] shadow-[0px_2px_4.4px_0px_rgba(0,0,0,0.25)] size-full" data-name="Card de jogo">
       <div className="-translate-x-1/2 absolute h-[192px] left-[calc(50%+0.5px)] rounded-tl-[5px] rounded-tr-[5px] top-0 w-[273px]" data-name="image 6">
         <div aria-hidden="true" className="absolute inset-0 pointer-events-none rounded-tl-[5px] rounded-tr-[5px]">
-          <img alt="" className="absolute max-w-none object-cover rounded-tl-[5px] rounded-tr-[5px] size-full" src={imgCardDeJogo} />
+          <img alt="" className="absolute max-w-none object-cover rounded-tl-[5px] rounded-tr-[5px] size-full" src={imgCardDeJogo.src} />
           <div className="absolute bg-gradient-to-b from-[9%] from-[rgba(0,0,0,0.22)] inset-0 rounded-tl-[5px] rounded-tr-[5px] to-[rgba(0,0,0,0.45)] via-1/2 via-[rgba(0,0,0,0)]" />
         </div>
       </div>

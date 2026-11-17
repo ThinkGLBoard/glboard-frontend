@@ -39,7 +39,7 @@ export default function Frame4() {
   return (
     <div className="content-stretch flex flex-col gap-[20px] items-start relative size-full">
       <div className="aspect-[373.0741271972656/253.22000122070312] relative shrink-0 w-full" data-name="Frame 52731 1">
-        <img alt="" className="absolute inset-0 max-w-none object-cover pointer-events-none size-full" src={imgFrame527311} />
+        <img alt="" className="absolute inset-0 max-w-none object-cover pointer-events-none size-full" src={imgFrame527311.src} />
       </div>
       <Frame3 />
     </div>

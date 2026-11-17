@@ -52,7 +52,7 @@ export function Frame26() {
   return (
     <div className="content-stretch flex flex-col gap-[20px] items-center w-[273px]">
       <div className="aspect-[373.07415771484375/253.22000122070312] relative shrink-0 w-full" data-name="Frame 52733 1">
-        <img alt="" className="absolute inset-0 max-w-none object-cover pointer-events-none size-full" src={imgFrame527331} />
+        <img alt="" className="absolute inset-0 max-w-none object-cover pointer-events-none size-full" src={imgFrame527331.src} />
       </div>
       <Group22 />
     </div>
@@ -106,7 +106,7 @@ export function Frame25() {
   return (
     <div className="content-stretch flex flex-col gap-[20px] items-center w-[272px]">
       <div className="aspect-[373.07415771484375/253.22000122070312] relative shrink-0 w-full" data-name="Frame 52733 1">
-        <img alt="" className="absolute inset-0 max-w-none object-cover pointer-events-none size-full" src={imgFrame527332} />
+        <img alt="" className="absolute inset-0 max-w-none object-cover pointer-events-none size-full" src={imgFrame527332.src} />
       </div>
       <Group24 />
     </div>
@@ -824,7 +824,7 @@ export function Frame22() {
   return (
     <div className="content-stretch flex flex-col gap-[20px] items-start w-[272px]">
       <div className="aspect-[373.0741271972656/253.22000122070312] relative shrink-0 w-full" data-name="Frame 52731 1">
-        <img alt="" className="absolute inset-0 max-w-none object-cover pointer-events-none size-full" src={imgFrame527311} />
+        <img alt="" className="absolute inset-0 max-w-none object-cover pointer-events-none size-full" src={imgFrame527311.src} />
       </div>
       <Frame20 />
     </div>

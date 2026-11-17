@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/ui/card";
 import { Users, Target, Clock, TrendingUp, Award, AlertCircle, CheckCircle, Flag, Play, Search, Filter, Plus, X, BarChart3, Download, FileSpreadsheet, Image as ImageIcon, FileText, MessageCircle, Send, Bot, Sparkles } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { Input } from "@/ui/input";

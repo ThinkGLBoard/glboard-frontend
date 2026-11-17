@@ -3,6 +3,14 @@
 @source "../ui/alert-dialog.tsx";
 @source "../ui/button.tsx";
 
+@font-face {
+  font-family: 'Arial Rounded MT Bold';
+  src: url('/fonts/ARLRDBD.TTF') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 :root {
@@ -117,6 +125,7 @@
 
   --font-sans: var(--font-poppins);
   --font-mono: var(--font-geist-mono);
+  --font-arial-rounded: "Arial Rounded MT Bold", sans-serif;
 }
 
 body {
