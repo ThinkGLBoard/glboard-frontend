@@ -16,6 +16,7 @@ export interface ApiQuestion {
   options: ApiOption[];
   children: ApiQuestion[];
   answer: string | number | boolean | string[] | null;
+  comment?: string | null;
 }
 
 export interface ApiCategory {
@@ -35,6 +36,15 @@ export interface ApiDimension {
 export interface FormResponse {
   formVersionId: string;
   dimensions: ApiDimension[];
+}
+
+export interface FormComment {
+  id: string;
+  comment: string | null;
+  questionId: string;
+  questionGameFormId: string;
+  status: boolean;
+  createdAt: string;
 }
 
 type FormAnswerValue = string | number | boolean | string[];
@@ -212,7 +222,7 @@ function buildSaveRequest(gameId: string, form: FormResponse): SaveFormRequest {
 
 export async function getForm(gameId: string) {
   const form = await request<FormResponse>(
-    `/api/forms?gameId=${encodeURIComponent(gameId)}`
+    `/api/forms/${encodeURIComponent(gameId)}`,
   );
 
   console.log("Formulário vindo da API:", form);
@@ -220,10 +230,27 @@ export async function getForm(gameId: string) {
   return form;
 }
 
+export function getFormComments(gameId: string) {
+  return request<FormComment[]>(
+    `/api/forms/comments/${encodeURIComponent(gameId)}`,
+  );
+}
+
 export function saveFormDraft(gameId: string, form: FormResponse) {
   return request<FormMutationResponse>("/api/forms/draft", {
     method: "POST",
     body: JSON.stringify(buildSaveRequest(gameId, form)),
+  });
+}
+
+export function saveFormComment(
+  gameId: string,
+  questionId: string,
+  comment: string,
+) {
+  return request<string>("/api/forms/comments", {
+    method: "POST",
+    body: JSON.stringify({ gameId, questionId, comment }),
   });
 }
 

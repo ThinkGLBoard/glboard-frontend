@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useId } from "react";
 import { Button } from "@/ui/button";
+import { Textarea } from "@/ui/textarea";
 import {
   CheckCircle2,
   BookOpen,
@@ -7,14 +8,18 @@ import {
   Laptop,
   ChevronLeft,
   ChevronRight,
+  MessageSquare,
   RotateCcw,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
   getForm,
+  getFormComments,
+  saveFormComment,
   saveFormDraft,
   submitForm,
   FormResponse,
+  FormComment,
   ApiQuestion,
 } from "../services/formsApi";
 
@@ -65,11 +70,153 @@ interface ResumePosition {
   questionId: string | null;
 }
 
+function CommentField({
+  comment,
+  onSave,
+}: {
+  comment: string;
+  onSave: (comment: string) => Promise<boolean>;
+}) {
+  const textareaId = useId();
+  const [isOpen, setIsOpen] = useState(false);
+  const [draft, setDraft] = useState(comment);
+  const [isSavingComment, setIsSavingComment] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) setDraft(comment);
+  }, [comment, isOpen]);
+
+  const normalizedDraft = draft.trim();
+  const hasChanged = normalizedDraft !== comment;
+  const canSave =
+    hasChanged && (normalizedDraft.length > 0 || comment.length > 0);
+
+  const handleSave = async () => {
+    if (!canSave) return;
+    setIsSavingComment(true);
+    try {
+      const saved = await onSave(normalizedDraft);
+      if (saved) setIsOpen(false);
+    } finally {
+      setIsSavingComment(false);
+    }
+  };
+
+  if (!isOpen) {
+    return (
+      <button
+        type="button"
+        onClick={() => {
+          setDraft(comment);
+          setIsOpen(true);
+        }}
+        aria-expanded={false}
+        aria-controls={textareaId}
+        className="mt-3 inline-flex items-center gap-1 text-[11px] font-medium text-[#858585] opacity-80 transition-colors hover:text-[#166095] hover:opacity-100 focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#166095]/25 focus-visible:ring-offset-2"
+      >
+        <MessageSquare className="h-3 w-3" aria-hidden="true" />
+        {comment ? "Editar comentário" : "Adicionar comentário"}
+      </button>
+    );
+  }
+
+  return (
+    <div className="mt-4 rounded-lg border border-[#d8e4ec] bg-[#f7fafc] p-3 sm:p-4">
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <label
+          htmlFor={textareaId}
+          className="flex items-center gap-1.5 text-xs font-semibold text-[#1a1a1a]"
+        >
+          <MessageSquare
+            className="h-3.5 w-3.5 text-[#166095]"
+            aria-hidden="true"
+          />
+          Comentário sobre esta pergunta
+        </label>
+        <span className="text-[11px] tabular-nums text-[#717171]">
+          {draft.length}/1000
+        </span>
+      </div>
+      <Textarea
+        id={textareaId}
+        value={draft}
+        maxLength={1000}
+        rows={4}
+        autoFocus
+        onChange={(event) => setDraft(event.target.value)}
+        placeholder="Adicione observações ou detalhes sobre esta avaliação..."
+        className="min-h-24 resize-y rounded-lg border-[#cbd8e1] bg-white text-sm text-[#1a1a1a] placeholder:text-[#a0a0a0] focus-visible:border-[#166095] focus-visible:ring-[#166095]/20 focus-visible:outline-[#166095]! focus-visible:outline-2! focus-visible:outline-offset-2!"
+      />
+      <div className="mt-3 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        <Button
+          type="button"
+          variant="outline"
+          disabled={isSavingComment}
+          onClick={() => {
+            setDraft(comment);
+            setIsOpen(false);
+          }}
+          className="h-9 rounded-lg border-[#d4d4d4] bg-white px-4 text-xs font-semibold text-[#4a4a4a] hover:bg-[#f2f2f2]"
+        >
+          Cancelar
+        </Button>
+        <Button
+          type="button"
+          disabled={!canSave || isSavingComment}
+          onClick={() => void handleSave()}
+          className="h-9 rounded-lg bg-[#166095] px-4 text-xs font-semibold text-white hover:bg-[#104d78] disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {isSavingComment ? "Salvando..." : "Salvar comentário"}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function flattenQuestions(questions: ApiQuestion[]): ApiQuestion[] {
   return questions.flatMap((question) => [
     question,
     ...flattenQuestions(question.children ?? []),
   ]);
+}
+
+function attachCommentsToForm(
+  form: FormResponse,
+  comments: FormComment[],
+): FormResponse {
+  const latestCommentByQuestion = new Map<string, FormComment>();
+
+  for (const comment of comments) {
+    const current = latestCommentByQuestion.get(comment.questionId);
+    if (
+      !current ||
+      Date.parse(comment.createdAt) >= Date.parse(current.createdAt)
+    ) {
+      latestCommentByQuestion.set(comment.questionId, comment);
+    }
+  }
+
+  function attachToQuestions(questions: ApiQuestion[]): ApiQuestion[] {
+    return questions.map((question) => {
+      const comment = latestCommentByQuestion.get(question.id);
+      return {
+        ...question,
+        comment: comment?.comment ?? "",
+        children: attachToQuestions(question.children ?? []),
+      };
+    });
+  }
+
+  return {
+    ...form,
+    dimensions: form.dimensions.map((dimension) => ({
+      ...dimension,
+      categories: dimension.categories.map((category) => ({
+        ...category,
+        questions: attachToQuestions(category.questions),
+      })),
+    })),
+  };
 }
 
 function hasAnswer(question: ApiQuestion): boolean {
@@ -1859,13 +2006,17 @@ export function InterfaceEvaluationTab({
         setCurrentCategoryIndex(0);
         setResumeQuestionId(null);
 
-        const form = await getForm(gameId);
+        const [form, comments] = await Promise.all([
+          getForm(gameId),
+          getFormComments(gameId),
+        ]);
+        const formWithComments = attachCommentsToForm(form, comments);
 
         console.log("Game ID:", gameId);
         console.log("Formulário vindo da API:", form);
 
-        setApiForm(form);
-        const resumePosition = getResumePosition(gameId, form);
+        setApiForm(formWithComments);
+        const resumePosition = getResumePosition(gameId, formWithComments);
         if (resumePosition) {
           setSelectedDimensionId(resumePosition.dimensionId);
           setCurrentCategoryIndex(resumePosition.categoryIndex);
@@ -1946,6 +2097,56 @@ export function InterfaceEvaluationTab({
     };
   });
 }
+
+  function updateQuestionComment(questionId: string, comment: string) {
+    function updateQuestions(questions: ApiQuestion[]): ApiQuestion[] {
+      return questions.map((question) => {
+        if (question.id === questionId) {
+          return { ...question, comment };
+        }
+
+        return {
+          ...question,
+          children: updateQuestions(question.children ?? []),
+        };
+      });
+    }
+
+    setApiForm((current) => {
+      if (!current) return current;
+
+      return {
+        ...current,
+        dimensions: current.dimensions.map((dimension) => ({
+          ...dimension,
+          categories: dimension.categories.map((category) => ({
+            ...category,
+            questions: updateQuestions(category.questions),
+          })),
+        })),
+      };
+    });
+  }
+
+  async function handleSaveQuestionComment(
+    questionId: string,
+    comment: string,
+  ): Promise<boolean> {
+    try {
+      await saveFormComment(gameId, questionId, comment);
+      updateQuestionComment(questionId, comment);
+      toast.success("Comentário salvo com sucesso.");
+      return true;
+    } catch (error) {
+      console.error("Erro ao salvar comentário:", error);
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível salvar o comentário.",
+      );
+      return false;
+    }
+  }
 
   function getVisibleQuestions() {
   if (!currentCategory) return [];
@@ -2423,6 +2624,12 @@ export function InterfaceEvaluationTab({
                   </div>
 
                   {renderQuestionInput(question)}
+                  <CommentField
+                    comment={question.comment ?? ""}
+                    onSave={(comment) =>
+                      handleSaveQuestionComment(question.id, comment)
+                    }
+                  />
                 </div>
               ))}
             </div>
